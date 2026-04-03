@@ -1,0 +1,17 @@
+{
+  "name": "@rs/sdk",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "license": "MIT",
+  "scripts": {
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "devDependencies": {
+    "@rs/tsconfig": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

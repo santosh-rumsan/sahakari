@@ -1,0 +1,360 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Todo {
+  id        String   @id @default(cuid())
+  title     String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  tag       String   @default("Lead")
+  status    String   @default("Active")
+  avatar    String?
+  phone     String?
+  company   String?
+  website   String?
+  location  String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum MemberType {
+  ORDINARY
+  SHAREHOLDER
+}
+
+enum Religion {
+  HINDU
+  MUSLIM
+  BUDDHIST
+  CHRISTIAN
+  OTHER
+}
+
+enum Education {
+  ILLITERATE
+  LITERATE
+  PRIMARY
+  SECONDARY
+  SLC_SEE
+  INTERMEDIATE
+  BACHELOR
+  DIPLOMA
+  MASTER
+  DOCTORATE
+}
+
+enum RelationType {
+  GRANDFATHER
+  GRANDMOTHER
+  FATHER
+  MOTHER
+  HUSBAND
+  WIFE
+  SON
+  DAUGHTER
+}
+
+enum KycStatus {
+  DRAFT
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum LoanPurpose {
+  AGRICULTURE
+  SMALL_BUSINESS
+  PERSONAL
+  EDUCATION
+  HEALTH
+  HOUSE_REPAIR
+}
+
+enum LoanDuration {
+  SIX_MONTHS
+  ONE_YEAR
+  TWO_YEARS
+  THREE_YEARS
+  FOUR_YEARS_PLUS
+}
+
+enum CollateralType {
+  WITH
+  WITHOUT
+}
+
+enum LoanStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum AdminRole {
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum NotificationType {
+  KYC_STATUS
+  LOAN_STATUS
+  GENERAL
+}
+
+model Province {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  nameNp     String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  districts  District[]
+}
+
+model District {
+  id          String        @id @default(cuid())
+  name        String
+  nameNp      String
+  provinceId  String
+  province    Province      @relation(fields: [provinceId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  municipalities Municipality[]
+  kycDistrictsBasic      KycBasicInfo[]
+  kycCitizenshipDistricts KycMandatory[]
+  kycNinDistricts         KycMandatory[]
+  loanDistricts           LoanAddress[]
+  @@unique([provinceId, name])
+}
+
+model Municipality {
+  id         String       @id @default(cuid())
+  name       String
+  nameNp     String
+  type       String       @default("MUNICIPALITY")
+  districtId String
+  district   District     @relation(fields: [districtId], references: [id])
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  kycMunicipalities  KycBasicInfo[]
+  loanMunicipalities LoanAddress[]
+  @@unique([districtId, name])
+}
+
+model User {
+  id               String       @id @default(cuid())
+  phone            String       @unique
+  fullName         String
+  cooperative     String
+  passbookNumber   String       @unique
+  password         String
+  email            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  kyc              Kyc?
+  loanApplications LoanApplication[]
+  notifications    Notification[]
+  adminOtp         AdminOtp[]
+}
+
+model Kyc {
+  id                         String    @id @default(cuid())
+  userId                     String    @unique
+  user                       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fullNameEn                 String?
+  fullNameNp                 String?
+  passbookNo                 String?
+  memberType                 MemberType?
+  joinDate                   DateTime?
+  gender                     Gender?
+  dob                        DateTime?
+  citizenshipNumber          String?   @unique
+  citizenshipIssuedDate      DateTime?
+  citizenshipIssuedDistrict  String?
+  ninIdNumber                String?   @unique
+  ninIssuedDate              DateTime?
+  ninIssuedDistrict          String?
+  monthlyIncome              Float?
+  nationality                String?
+  provinceId                 String?
+  districtId                 String?
+  district                   District?  @relation(fields: [districtId], references: [id])
+  municipalityId             String?
+  municipality               Municipality? @relation(fields: [municipalityId], references: [id])
+  wardNumber                Int?
+  tole                       String?
+  religion                   Religion?
+  occupation                 String?
+  education                  Education?
+  contactNumber              String?
+  mobileNumber               String?
+  email                      String?
+  temporaryAddress           String?
+  shareholderNumber          String?
+  genealogyJson              Json?
+
+  mandatoryName             String?
+  mandatoryDob              DateTime?
+  mandatoryRelation         String?
+  mandatoryAddress          String?
+  mandatoryContactNumber    String?
+  mandatorySignatureUrl     String?
+  mandatoryPassportPhotoUrl String?
+
+  nomineeName               String?
+  nomineeDob                DateTime?
+  nomineeRelation           String?
+  nomineeAddress            String?
+  nomineeContactNumber      String?
+  nomineeSignatureUrl       String?
+  nomineePassportPhotoUrl   String?
+
+  digitalSignatureUrl       String?
+  rightThumbUrl             String?
+  leftThumbUrl              String?
+  passportPhotoUrl          String?
+
+  status                    KycStatus  @default(DRAFT)
+  submittedAt               DateTime?
+  reviewedAt                DateTime?
+  reviewedById              String?
+  rejectionReason           String?
+  createdAt                 DateTime   @default(now())
+  updatedAt                 DateTime   @updatedAt
+}
+
+model LoanApplication {
+  id                String         @id @default(cuid())
+  userId            String
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referenceNumber  String         @unique
+
+  grandfatherNameNp String?
+  grandfatherNameEn String?
+  fatherNameNp      String?
+  fatherNameEn     String?
+  fullNameNp       String?
+  fullNameEn       String?
+  age              Int?
+  shareholderNumber String?
+  passbookNumber   String?
+  contactNumber    String?
+  citizenshipNumber String?
+  ninIdNumber      String?
+
+  loanAmount        Float?
+  loanAmountInWords String?
+  purpose           LoanPurpose?
+  duration          LoanDuration?
+  collateralType    CollateralType?
+
+  province          String?
+  districtId        String?
+  district          District?      @relation(fields: [districtId], references: [id])
+  municipalityId    String?
+  municipality      Municipality? @relation(fields: [municipalityId], references: [id])
+  wardNumber        Int?
+  tole              String?
+
+  termsAccepted     Boolean        @default(false)
+  guarantorName     String?
+  guarantorAddress  String?
+  guarantorShareholderNumber String?
+  guaranteeAmount   Float?
+
+  passportPhotoUrl         String?
+  citizenshipFrontUrl      String?
+  citizenshipBackUrl       String?
+  ninIdCardUrl            String?
+  propertyDocumentUrl     String?
+  salarySheetUrl          String?
+
+  status            LoanStatus    @default(DRAFT)
+  submittedAt       DateTime?
+  reviewedAt        DateTime?
+  reviewedById      String?
+  rejectionReason   String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+model AdminUser {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String
+  role      AdminRole @default(ADMIN)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  otps      AdminOtp[]
+}
+
+model AdminOtp {
+  id         String    @id @default(cuid())
+  adminId    String
+  admin      AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  otp        String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model Passbook {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  currentBalance Float   @default(0)
+  totalSavings   Float   @default(0)
+  totalWithdrawals Float @default(0)
+  interestRateSavings Float @default(0)
+  interestRateLoan    Float @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  transactions  PassbookTransaction[]
+}
+
+model PassbookTransaction {
+  id            String      @id @default(cuid())
+  passbookId    String
+  passbook      Passbook    @relation(fields: [passbookId], references: [id], onDelete: Cascade)
+  type          String
+  amount        Float
+  description   String?
+  balanceAfter  Float
+  createdAt     DateTime    @default(now())
+}
