@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@rs/db';
 
 @Injectable()
 export class LoanService {

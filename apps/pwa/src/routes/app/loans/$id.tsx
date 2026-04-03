@@ -5,14 +5,13 @@ import { ChevronLeft } from "lucide-react";
 
 import { createLoanApi } from "@rs/sdk";
 
+import { getToken } from "../../../lib/storage";
+
+const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
+
 export const Route = createFileRoute("/app/loans/$id")({
   component: LoanDetailPage,
 });
-
-const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
-function getToken() {
-  return localStorage.getItem("token") ?? "";
-}
 
 function LoanDetailPage() {
   const { id } = Route.useParams();

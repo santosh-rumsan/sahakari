@@ -3,6 +3,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 
 import { createAuthApi } from "@rs/sdk";
 
+import { setStorageItem } from "../lib/storage";
+
 export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
@@ -22,8 +24,8 @@ function LoginPage() {
     setIsSubmitting(true);
     try {
       const res = await authApi.login({ phone, password });
-      localStorage.setItem("token", res.accessToken);
-      localStorage.setItem("user", JSON.stringify(res.user));
+      setStorageItem("token", res.accessToken);
+      setStorageItem("user", JSON.stringify(res.user));
       navigate({ to: "/app/dashboard" });
     } catch (err: any) {
       setError(err.message ?? "Login failed");

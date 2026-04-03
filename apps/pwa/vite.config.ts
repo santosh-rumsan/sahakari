@@ -1,65 +1,76 @@
-import net from "node:net";
 import tailwindcss from "@tailwindcss/vite";
-import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
-import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 import viteTsConfigPaths from "vite-tsconfig-paths";
 
-async function getAvailablePort(preferredPort: number) {
-  const reservePort = (port: number) =>
-    new Promise<number>((resolve, reject) => {
-      const server = net.createServer();
-      server.unref();
-      server.once("error", reject);
-      server.listen(port, () => {
-        const address = server.address();
-        const resolvedPort =
-          typeof address === "object" && address ? address.port : port;
-        server.close((error) => {
-          if (error) {
-            reject(error);
-            return;
-          }
-          resolve(resolvedPort);
-        });
-      });
-    });
-
-  try {
-    return await reservePort(preferredPort);
-  } catch (error) {
-    if (
-      typeof error === "object" &&
-      error &&
-      "code" in error &&
-      error.code === "EADDRINUSE"
-    ) {
-      return reservePort(0);
-    }
-    throw error;
-  }
-}
-
-const config = defineConfig(async ({ command }) => {
-  const isBuild = command === "build";
-  const devtoolsEventBusPort = isBuild ? 42070 : await getAvailablePort(42070);
+const config = defineConfig(() => {
   const plugins = [
-    nitro(),
     viteTsConfigPaths({ projects: ["./tsconfig.json"] }),
     tailwindcss(),
     tanstackStart(),
     viteReact(),
+    VitePWA({
+      registerType: "autoUpdate",
+      injectRegister: "auto",
+      outDir: ".output/public",
+      workbox: {
+        globPatterns: [],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-cache",
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "gstatic-fonts-cache",
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+          {
+            urlPattern: /\/v1\/.*/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "api-cache",
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 5 },
+              networkTimeoutSeconds: 10,
+            },
+          },
+        ],
+      },
+      manifest: {
+        name: "Sahakari App",
+        short_name: "Sahakari",
+        description: "Cooperatives loan application",
+        theme_color: "#2563eb",
+        background_color: "#ffffff",
+        display: "standalone",
+        orientation: "portrait",
+        scope: "/",
+        start_url: "/",
+        icons: [
+          { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
+          {
+            src: "/icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable",
+          },
+        ],
+      },
+      devOptions: {
+        enabled: false,
+        type: "module",
+      },
+    }),
   ];
-
-  if (!isBuild) {
-    plugins.unshift(
-      devtools({
-        eventBusConfig: { port: devtoolsEventBusPort },
-      }),
-    );
-  }
 
   return {
     plugins,

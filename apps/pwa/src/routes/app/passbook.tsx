@@ -4,14 +4,13 @@ import { BookOpen, TrendingUp } from "lucide-react";
 
 import { createPassbookApi } from "@rs/sdk";
 
+import { getToken } from "../../lib/storage";
+
 export const Route = createFileRoute("/app/passbook")({
   component: PassbookPage,
 });
 
 const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
-function getToken() {
-  return localStorage.getItem("token") ?? "";
-}
 
 function PassbookPage() {
   const token = getToken();

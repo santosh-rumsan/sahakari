@@ -12,15 +12,13 @@ import {
 
 import { createKycApi, createLoanApi, createNotificationApi } from "@rs/sdk";
 
+import { getToken, getStorageItem } from "../../lib/storage";
+
 const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
 
 export const Route = createFileRoute("/app/dashboard")({
   component: DashboardPage,
 });
-
-function getToken() {
-  return localStorage.getItem("token") ?? "";
-}
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { icon: React.ReactNode; className: string }> = {
@@ -79,7 +77,7 @@ function DashboardPage() {
     queryFn: () => notifApi.list(token),
   });
 
-  const user = JSON.parse(localStorage.getItem("user") ?? "{}");
+  const user = JSON.parse(getStorageItem("user") ?? "{}");
   const kycApproved = kyc?.status === "APPROVED";
 
   return (

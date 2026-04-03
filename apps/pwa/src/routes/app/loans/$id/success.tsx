@@ -2,14 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircle2, CreditCard } from "lucide-react";
 
+import { getToken } from "../../../../lib/storage";
+
+const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
+
 export const Route = createFileRoute("/app/loans/$id/success")({
   component: LoanSuccessPage,
 });
-
-const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
-function getToken() {
-  return localStorage.getItem("token") ?? "";
-}
 
 function LoanSuccessPage() {
   const { id } = Route.useParams();

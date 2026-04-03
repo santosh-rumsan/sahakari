@@ -5,6 +5,8 @@ import { ChevronLeft, Upload } from "lucide-react";
 
 import { createKycApi, createUploadApi } from "@rs/sdk";
 
+import { getToken } from "../../../lib/storage";
+
 const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
 const kycApi = createKycApi(apiUrl);
 const uploadApi = createUploadApi(apiUrl);
@@ -12,10 +14,6 @@ const uploadApi = createUploadApi(apiUrl);
 export const Route = createFileRoute("/app/kyc/nominee")({
   component: NomineePage,
 });
-
-function getToken() {
-  return localStorage.getItem("token") ?? "";
-}
 
 function Field({
   label,

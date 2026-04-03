@@ -6,6 +6,8 @@ import { CheckCircle2, ChevronLeft, ChevronRight, Upload } from "lucide-react";
 
 import { createGeoApi, createLoanApi } from "@rs/sdk";
 
+import { getToken } from "../../../lib/storage";
+
 const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
 const loanApi = createLoanApi(apiUrl);
 const geoApi = createGeoApi(apiUrl);
@@ -20,10 +22,6 @@ const STEPS = [
 export const Route = createFileRoute("/app/loans/new")({
   component: NewLoanPage,
 });
-
-function getToken() {
-  return localStorage.getItem("token") ?? "";
-}
 
 function Field({
   label,

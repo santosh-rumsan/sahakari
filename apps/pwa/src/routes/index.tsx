@@ -1,8 +1,10 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
+import { getStorageItem } from "../lib/storage";
+
 export const Route = createFileRoute("/")({
   beforeLoad: () => {
-    const token = localStorage.getItem("token");
+    const token = getStorageItem("token");
     if (token) {
       throw redirect({ to: "/app/dashboard" });
     }

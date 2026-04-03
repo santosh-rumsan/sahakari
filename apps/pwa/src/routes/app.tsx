@@ -16,6 +16,8 @@ import {
 
 import { createKycApi, createLoanApi, createNotificationApi } from "@rs/sdk";
 
+import { getStorageItem, getToken, removeStorageItem } from "../lib/storage";
+
 const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
 const kycApi = createKycApi(apiUrl);
 const loanApi = createLoanApi(apiUrl);
@@ -23,20 +25,18 @@ const notifApi = createNotificationApi(apiUrl);
 
 export const Route = createFileRoute("/app")({
   beforeLoad: () => {
-    const token = localStorage.getItem("token");
+    const token = getStorageItem("token");
     if (!token) throw new Error("Not authenticated");
   },
   component: AppLayout,
 });
 
-export function getToken() {
-  return localStorage.getItem("token") ?? "";
-}
+export { getToken };
 
 function AppLayout() {
   const token = getToken();
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user") ?? "{}");
+  const user = JSON.parse(getStorageItem("user") ?? "{}");
 
   const { data: kyc } = useQuery({
     queryKey: ["kyc"],
@@ -60,8 +60,8 @@ function AppLayout() {
   const canApplyLoan = kycApproved;
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    removeStorageItem("token");
+    removeStorageItem("user");
     navigate({ to: "/login" });
   };
 

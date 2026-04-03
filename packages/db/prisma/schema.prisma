@@ -141,11 +141,9 @@ model District {
   province    Province      @relation(fields: [provinceId], references: [id])
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-  municipalities Municipality[]
-  kycDistrictsBasic      KycBasicInfo[]
-  kycCitizenshipDistricts KycMandatory[]
-  kycNinDistricts         KycMandatory[]
-  loanDistricts           LoanAddress[]
+  municipalities   Municipality[]
+  kycs             Kyc[]             @relation("KycDistrict")
+  loanApplications LoanApplication[] @relation("LoanDistrict")
   @@unique([provinceId, name])
 }
 
@@ -158,8 +156,8 @@ model Municipality {
   district   District     @relation(fields: [districtId], references: [id])
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
-  kycMunicipalities  KycBasicInfo[]
-  loanMunicipalities LoanAddress[]
+  kycs             Kyc[]             @relation("KycMunicipality")
+  loanApplications LoanApplication[] @relation("LoanMunicipality")
   @@unique([districtId, name])
 }
 
@@ -201,9 +199,9 @@ model Kyc {
   nationality                String?
   provinceId                 String?
   districtId                 String?
-  district                   District?  @relation(fields: [districtId], references: [id])
+  district                   District?     @relation("KycDistrict", fields: [districtId], references: [id])
   municipalityId             String?
-  municipality               Municipality? @relation(fields: [municipalityId], references: [id])
+  municipality               Municipality? @relation("KycMunicipality", fields: [municipalityId], references: [id])
   wardNumber                Int?
   tole                       String?
   religion                   Religion?
@@ -273,9 +271,9 @@ model LoanApplication {
 
   province          String?
   districtId        String?
-  district          District?      @relation(fields: [districtId], references: [id])
+  district          District?      @relation("LoanDistrict", fields: [districtId], references: [id])
   municipalityId    String?
-  municipality      Municipality? @relation(fields: [municipalityId], references: [id])
+  municipality      Municipality?  @relation("LoanMunicipality", fields: [municipalityId], references: [id])
   wardNumber        Int?
   tole              String?
 

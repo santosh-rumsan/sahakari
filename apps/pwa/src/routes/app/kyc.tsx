@@ -10,15 +10,13 @@ import {
 
 import { createKycApi } from "@rs/sdk";
 
+import { getToken } from "../../lib/storage";
+
 const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
 
 export const Route = createFileRoute("/app/kyc")({
   component: KycPage,
 });
-
-function getToken() {
-  return localStorage.getItem("token") ?? "";
-}
 
 const STEPS = ["Basic Info", "Mandatory", "Nominee", "Signature"] as const;
 

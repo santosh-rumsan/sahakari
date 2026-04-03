@@ -7,6 +7,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { createGeoApi, createKycApi } from "@rs/sdk";
 
+import { getToken } from "../../../lib/storage";
+
 const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
 const kycApi = createKycApi(apiUrl);
 const geoApi = createGeoApi(apiUrl);
@@ -14,10 +16,6 @@ const geoApi = createGeoApi(apiUrl);
 export const Route = createFileRoute("/app/kyc/basic-info")({
   component: BasicInfoPage,
 });
-
-function getToken() {
-  return localStorage.getItem("token") ?? "";
-}
 
 function Field({
   label,

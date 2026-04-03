@@ -3,15 +3,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { createNotificationApi } from "@rs/sdk";
 
+import { getToken } from "../../lib/storage";
+
 const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
 
 export const Route = createFileRoute("/app/notifications")({
   component: NotificationsPage,
 });
-
-function getToken() {
-  return localStorage.getItem("token") ?? "";
-}
 
 function NotificationsPage() {
   const token = getToken();
