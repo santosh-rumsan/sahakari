@@ -10,9 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TodosRouteImport } from './routes/todos'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppLoginRouteImport } from './routes/_app.login'
 import { Route as AppLoansRouteImport } from './routes/_app/loans'
 import { Route as AppKycRouteImport } from './routes/_app/kyc'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
@@ -28,6 +28,11 @@ const TodosRoute = TodosRouteImport.update({
   path: '/todos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
@@ -36,11 +41,6 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AppLoginRoute = AppLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => AppRoute,
 } as any)
 const AppLoansRoute = AppLoansRouteImport.update({
   id: '/loans',
@@ -90,13 +90,13 @@ const AppContactsIdEditRoute = AppContactsIdEditRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/todos': typeof TodosRoute
   '/contacts': typeof AppContactsRouteWithChildren
   '/customers': typeof AppCustomersRoute
   '/dashboard': typeof AppDashboardRoute
   '/kyc': typeof AppKycRouteWithChildren
   '/loans': typeof AppLoansRouteWithChildren
-  '/login': typeof AppLoginRoute
   '/contacts/new': typeof AppContactsNewRoute
   '/kyc/$id': typeof AppKycIdRoute
   '/loans/$id': typeof AppLoansIdRoute
@@ -104,13 +104,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/todos': typeof TodosRoute
   '/contacts': typeof AppContactsRouteWithChildren
   '/customers': typeof AppCustomersRoute
   '/dashboard': typeof AppDashboardRoute
   '/kyc': typeof AppKycRouteWithChildren
   '/loans': typeof AppLoansRouteWithChildren
-  '/login': typeof AppLoginRoute
   '/contacts/new': typeof AppContactsNewRoute
   '/kyc/$id': typeof AppKycIdRoute
   '/loans/$id': typeof AppLoansIdRoute
@@ -120,13 +120,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
   '/todos': typeof TodosRoute
   '/_app/contacts': typeof AppContactsRouteWithChildren
   '/_app/customers': typeof AppCustomersRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/kyc': typeof AppKycRouteWithChildren
   '/_app/loans': typeof AppLoansRouteWithChildren
-  '/_app/login': typeof AppLoginRoute
   '/_app/contacts/new': typeof AppContactsNewRoute
   '/_app/kyc/$id': typeof AppKycIdRoute
   '/_app/loans/$id': typeof AppLoansIdRoute
@@ -136,13 +136,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/login'
     | '/todos'
     | '/contacts'
     | '/customers'
     | '/dashboard'
     | '/kyc'
     | '/loans'
-    | '/login'
     | '/contacts/new'
     | '/kyc/$id'
     | '/loans/$id'
@@ -150,13 +150,13 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login'
     | '/todos'
     | '/contacts'
     | '/customers'
     | '/dashboard'
     | '/kyc'
     | '/loans'
-    | '/login'
     | '/contacts/new'
     | '/kyc/$id'
     | '/loans/$id'
@@ -165,13 +165,13 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_app'
+    | '/login'
     | '/todos'
     | '/_app/contacts'
     | '/_app/customers'
     | '/_app/dashboard'
     | '/_app/kyc'
     | '/_app/loans'
-    | '/_app/login'
     | '/_app/contacts/new'
     | '/_app/kyc/$id'
     | '/_app/loans/$id'
@@ -181,6 +181,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
   TodosRoute: typeof TodosRoute
 }
 
@@ -191,6 +192,13 @@ declare module '@tanstack/react-router' {
       path: '/todos'
       fullPath: '/todos'
       preLoaderRoute: typeof TodosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app': {
@@ -206,13 +214,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_app/login': {
-      id: '/_app/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof AppLoginRouteImport
-      parentRoute: typeof AppRoute
     }
     '/_app/loans': {
       id: '/_app/loans'
@@ -323,7 +324,6 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppKycRoute: typeof AppKycRouteWithChildren
   AppLoansRoute: typeof AppLoansRouteWithChildren
-  AppLoginRoute: typeof AppLoginRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -332,7 +332,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppKycRoute: AppKycRouteWithChildren,
   AppLoansRoute: AppLoansRouteWithChildren,
-  AppLoginRoute: AppLoginRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -340,6 +339,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
   TodosRoute: TodosRoute,
 }
 export const routeTree = rootRouteImport

@@ -15,6 +15,7 @@ const authApi = createAuthApi(import.meta.env["VITE_API_URL"] ?? "");
 function RegisterPage() {
   const navigate = useNavigate();
   const [error, setError] = useState("");
+
   const form = useForm({
     defaultValues: {
       phone: "",
@@ -40,163 +41,115 @@ function RegisterPage() {
         });
         setStorageItem("token", res.accessToken);
         setStorageItem("user", JSON.stringify(res.user));
-        navigate({ to: "/dashboard" });
+        navigate({ to: "/app/dashboard" });
       } catch (err: any) {
         setError(err.message ?? "Registration failed");
       }
     },
   });
 
+  const inputClass =
+    "w-full rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface outline-none ring-1 ring-outline-variant/50 focus:ring-2 focus:ring-primary/40 transition placeholder:text-on-surface-variant/50";
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-md">
-        <h1 className="mb-1 text-2xl font-bold text-gray-900">
-          Create Account
-        </h1>
-        <p className="mb-6 text-sm text-gray-500">
-          Register as a cooperative member
-        </p>
+    <div className="flex min-h-screen flex-col bg-surface pb-10">
+      {/* Top decorative gradient */}
+      <div className="h-36 bg-linear-to-br from-primary to-primary-dim" />
 
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
-            {error}
+      <div className="flex flex-1 flex-col px-6 -mt-10">
+        <div className="rounded-xl bg-surface-container-lowest shadow-[0_12px_32px_rgba(0,0,0,0.08)] p-7 space-y-6">
+          <div>
+            <h1 className="font-headline text-2xl font-bold text-on-surface">Create Account</h1>
+            <p className="mt-1 text-sm text-on-surface-variant">Register as a cooperative member</p>
           </div>
-        )}
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            form.handleSubmit();
-          }}
-          className="space-y-4"
-        >
-          <form.Field name="phone">
-            {(field) => (
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  placeholder="9779810223471"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                />
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="fullName">
-            {(field) => (
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="Surpana Surkheti"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                />
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="cooperative">
-            {(field) => (
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Cooperative Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="Chandragiri Saving & Credit"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                />
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="passbookNumber">
-            {(field) => (
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Passbook Number
-                </label>
-                <input
-                  type="text"
-                  placeholder="PASS1"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                />
-              </div>
-            )}
-          </form.Field>
+          {error && (
+            <div className="rounded-xl bg-error-container px-4 py-3 text-sm text-on-error-container">
+              {error}
+            </div>
+          )}
 
-          <form.Field name="password">
-            {(field) => (
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  placeholder="Min 8 chars: 1 capital, 1 digit, 1 special"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                />
-              </div>
-            )}
-          </form.Field>
-
-          <form.Field name="confirmPassword">
-            {(field) => (
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  placeholder="Repeat password"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                />
-              </div>
-            )}
-          </form.Field>
-
-          <form.Subscribe selector={(state) => state.isSubmitting}>
-            {(isSubmitting) => (
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
-              >
-                {isSubmitting ? "Creating account..." : "Register"}
-              </button>
-            )}
-          </form.Subscribe>
-        </form>
-
-        <p className="mt-4 text-center text-sm text-gray-500">
-          Already have an account?{" "}
-          <Link
-            to="/login"
-            className="font-medium text-blue-600 hover:underline"
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit();
+            }}
+            className="space-y-4"
           >
-            Sign in
-          </Link>
-        </p>
+            <form.Field name="phone">
+              {(field) => (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-on-surface-variant font-headline">Phone Number</label>
+                  <input type="tel" placeholder="9779810223471" className={inputClass} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} onBlur={field.handleBlur} />
+                </div>
+              )}
+            </form.Field>
+
+            <form.Field name="fullName">
+              {(field) => (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-on-surface-variant font-headline">Full Name</label>
+                  <input type="text" placeholder="Surpana Surkheti" className={inputClass} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} onBlur={field.handleBlur} />
+                </div>
+              )}
+            </form.Field>
+
+            <form.Field name="cooperative">
+              {(field) => (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-on-surface-variant font-headline">Cooperative Name</label>
+                  <input type="text" placeholder="Chandragiri Saving & Credit" className={inputClass} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} onBlur={field.handleBlur} />
+                </div>
+              )}
+            </form.Field>
+
+            <form.Field name="passbookNumber">
+              {(field) => (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-on-surface-variant font-headline">Passbook Number</label>
+                  <input type="text" placeholder="PASS1" className={inputClass} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} onBlur={field.handleBlur} />
+                </div>
+              )}
+            </form.Field>
+
+            <form.Field name="password">
+              {(field) => (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-on-surface-variant font-headline">Password</label>
+                  <input type="password" placeholder="Min 8 chars: 1 capital, 1 digit, 1 special" className={inputClass} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} onBlur={field.handleBlur} />
+                </div>
+              )}
+            </form.Field>
+
+            <form.Field name="confirmPassword">
+              {(field) => (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-on-surface-variant font-headline">Confirm Password</label>
+                  <input type="password" placeholder="Repeat password" className={inputClass} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} onBlur={field.handleBlur} />
+                </div>
+              )}
+            </form.Field>
+
+            <form.Subscribe selector={(state) => state.isSubmitting}>
+              {(isSubmitting) => (
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full rounded-lg bg-primary py-3.5 text-sm font-semibold text-on-primary transition active:scale-95 hover:bg-primary-dim disabled:opacity-50"
+                >
+                  {isSubmitting ? "Creating account..." : "Register"}
+                </button>
+              )}
+            </form.Subscribe>
+          </form>
+
+          <p className="text-center text-sm text-on-surface-variant">
+            Already have an account?{" "}
+            <Link to="/login" className="font-semibold text-primary hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

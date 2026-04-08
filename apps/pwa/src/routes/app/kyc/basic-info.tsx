@@ -2,8 +2,7 @@ import type { District, Municipality, Province } from "@rs/sdk";
 import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { createGeoApi, createKycApi } from "@rs/sdk";
 
@@ -26,7 +25,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-gray-700">
+      <label className="mb-1 block text-sm font-semibold text-gray-800">
         {label}
       </label>
       {children}
@@ -44,7 +43,7 @@ function Input({
     <input
       type={type}
       placeholder={placeholder}
-      className={`w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none ${className}`}
+      className={`w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none ${className}`}
       {...props}
     />
   );
@@ -57,7 +56,7 @@ function Select({
 }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
-      className={`w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none ${className}`}
+      className={`w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none ${className}`}
       {...props}
     >
       {children}
@@ -65,13 +64,16 @@ function Select({
   );
 }
 
+const TABS = ["Basic Info", "Mandatory", "Nominee", "Signature"] as const;
+
 function BasicInfoPage() {
   const token = getToken();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [step, setStep] = useState(1);
+  const [selectedProvinceId, setSelectedProvinceId] = useState<string>("");
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string>("");
 
-  const { data: kyc } = useQuery({
+  const { data: kyc, isLoading } = useQuery({
     queryKey: ["kyc"],
     queryFn: () => kycApi.getMine(token),
   });
@@ -81,16 +83,19 @@ function BasicInfoPage() {
     queryFn: () => geoApi.getProvinces(),
   });
 
+  const provinceId = selectedProvinceId || kyc?.provinceId || "";
+  const districtId = selectedDistrictId || kyc?.districtId || "";
+
   const { data: districts } = useQuery({
-    queryKey: ["districts", kyc?.provinceId],
-    queryFn: () => geoApi.getDistricts(kyc?.provinceId),
-    enabled: !!kyc?.provinceId,
+    queryKey: ["districts", provinceId],
+    queryFn: () => geoApi.getDistricts(provinceId),
+    enabled: !!provinceId,
   });
 
   const { data: municipalities } = useQuery({
-    queryKey: ["municipalities", kyc?.districtId],
-    queryFn: () => geoApi.getMunicipalities(kyc?.districtId),
-    enabled: !!kyc?.districtId,
+    queryKey: ["municipalities", districtId],
+    queryFn: () => geoApi.getMunicipalities(districtId),
+    enabled: !!districtId,
   });
 
   const saveMutation = useMutation({
@@ -99,13 +104,20 @@ function BasicInfoPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["kyc"] }),
   });
 
-  const submitMutation = useMutation({
-    mutationFn: () => kycApi.submit(token, kyc!.id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["kyc"] });
-      navigate({ to: "/app/kyc" });
-    },
-  });
+  // Parse existing genealogy JSON
+  const existingGenealogy = (() => {
+    try {
+      const g = kyc?.genealogyJson as unknown as Array<
+        Record<string, string>
+      > | null;
+      return g ?? [];
+    } catch {
+      return [];
+    }
+  })();
+
+  const getGenValue = (index: number, key: string) =>
+    existingGenealogy[index]?.[key] ?? "";
 
   const form = useForm({
     defaultValues: {
@@ -139,66 +151,131 @@ function BasicInfoPage() {
       email: kyc?.email ?? "",
       temporaryAddress: kyc?.temporaryAddress ?? "",
       shareholderNumber: kyc?.shareholderNumber ?? "",
+      // Genealogy: single entry (relation + name fields)
+      genealogy_relation: getGenValue(0, "relation"),
+      genealogy_nameEn: getGenValue(0, "nameEn"),
+      genealogy_surnameEn: getGenValue(0, "surnameEn"),
+      genealogy_nameNp: getGenValue(0, "nameNp"),
+      genealogy_surnameNp: getGenValue(0, "surnameNp"),
     },
   });
 
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-teal-700 border-t-transparent" />
+      </div>
+    );
+  }
+
   if (!kyc) {
-    return <div className="p-4 text-center text-gray-500">Loading KYC...</div>;
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50">
+        <p className="text-center text-gray-600">No KYC data found. Please start KYC first.</p>
+        <button
+          onClick={() => navigate({ to: "/app/kyc" })}
+          className="rounded-lg bg-teal-800 px-6 py-2 text-white"
+        >
+          Go Back
+        </button>
+      </div>
+    );
   }
 
   const handleSave = (data: Record<string, unknown>) => {
-    if (data.joinDate)
-      data.joinDate = new Date(data.joinDate as string).toISOString();
-    if (data.dob) data.dob = new Date(data.dob as string).toISOString();
-    if (data.citizenshipIssuedDate)
-      data.citizenshipIssuedDate = new Date(
-        data.citizenshipIssuedDate as string,
-      ).toISOString();
-    if (data.ninIssuedDate)
-      data.ninIssuedDate = new Date(data.ninIssuedDate as string).toISOString();
+    // Convert empty strings to null for enum and FK fields (Prisma rejects empty strings for these)
+    for (const field of ["memberType", "gender", "religion", "education", "provinceId", "districtId", "municipalityId"]) {
+      if (data[field] === "") data[field] = null;
+    }
+
+    // Convert numeric fields from string to proper types
+    data.wardNumber = data.wardNumber !== "" && data.wardNumber != null
+      ? (parseInt(data.wardNumber as string, 10) || null)
+      : null;
+    data.monthlyIncome = data.monthlyIncome !== "" && data.monthlyIncome != null
+      ? (parseFloat(data.monthlyIncome as string) || null)
+      : null;
+
+    // Convert date strings to ISO (set null for empty)
+    data.joinDate = data.joinDate ? new Date(data.joinDate as string).toISOString() : null;
+    data.dob = data.dob ? new Date(data.dob as string).toISOString() : null;
+    data.citizenshipIssuedDate = data.citizenshipIssuedDate
+      ? new Date(data.citizenshipIssuedDate as string).toISOString()
+      : null;
+    data.ninIssuedDate = data.ninIssuedDate
+      ? new Date(data.ninIssuedDate as string).toISOString()
+      : null;
+
+    // Build genealogy JSON from individual fields
+    const genealogyEntry = {
+      relation: data.genealogy_relation,
+      nameEn: data.genealogy_nameEn,
+      surnameEn: data.genealogy_surnameEn,
+      nameNp: data.genealogy_nameNp,
+      surnameNp: data.genealogy_surnameNp,
+    };
+    data.genealogyJson = [genealogyEntry];
+
+    // Remove flat genealogy fields before sending
+    delete data.genealogy_relation;
+    delete data.genealogy_nameEn;
+    delete data.genealogy_surnameEn;
+    delete data.genealogy_nameNp;
+    delete data.genealogy_surnameNp;
+
     saveMutation.mutate(data);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-3">
-        <Link to="/app/kyc" className="flex items-center text-gray-600">
-          <ChevronLeft size={20} />
-        </Link>
-        <h1 className="text-base font-semibold text-gray-900">
-          KYC — Basic Info
-        </h1>
+    <div className="min-h-screen bg-gray-100">
+      {/* Teal Header */}
+      <div className="bg-teal-800 px-5 pt-10 pb-6">
+        <button
+          onClick={() => navigate({ to: "/app/kyc" })}
+          className="mb-3 flex items-center gap-2 text-sm text-teal-200"
+        >
+          <span className="text-lg">←</span> Dashboard
+        </button>
+        <h1 className="mb-5 text-2xl font-bold text-white">KYC Verification</h1>
+        {/* Tab bar */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => {
+                if (tab === "Mandatory") navigate({ to: "/app/kyc/mandatory" });
+                else if (tab === "Nominee")
+                  navigate({ to: "/app/kyc/nominee" });
+                else if (tab === "Signature")
+                  navigate({ to: "/app/kyc/signature" });
+              }}
+              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                tab === "Basic Info"
+                  ? "bg-white text-teal-800"
+                  : "bg-teal-700 text-white"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Progress */}
-      <div className="flex border-b border-gray-200 bg-white px-4 py-2">
-        {["Personal", "Address", "Genealogy"].map((s, i) => (
-          <button
-            key={s}
-            onClick={() => setStep(i + 1)}
-            className={`flex-1 py-1 text-xs font-medium ${step === i + 1 ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-400"}`}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          form.handleSubmit();
-        }}
-        className="space-y-4 p-4"
-      >
-        {step === 1 && (
-          <>
+      {/* Form */}
+      <div className="space-y-5 p-5">
+        {/* Basic Information */}
+        <div className="rounded-2xl bg-white p-5 shadow-sm">
+          <h2 className="mb-5 text-lg font-bold text-gray-900">
+            Basic Information
+          </h2>
+          <div className="space-y-4">
+            {/* Full Name row */}
             <div className="grid grid-cols-2 gap-3">
               <Field label="Full Name (English)">
                 <form.Field name="fullNameEn">
                   {(field) => (
                     <Input
-                      placeholder="John Doe"
+                      placeholder="Full name"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -210,7 +287,7 @@ function BasicInfoPage() {
                 <form.Field name="fullNameNp">
                   {(field) => (
                     <Input
-                      placeholder="जोन डो"
+                      placeholder="नाम थर"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -219,12 +296,14 @@ function BasicInfoPage() {
                 </form.Field>
               </Field>
             </div>
+
+            {/* Alias + Type of Member */}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Passbook No.">
+              <Field label="Alias (Passbook No.)">
                 <form.Field name="passbookNo">
                   {(field) => (
                     <Input
-                      placeholder="PASS1"
+                      placeholder="Passbook number"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -232,21 +311,7 @@ function BasicInfoPage() {
                   )}
                 </form.Field>
               </Field>
-              <Field label="Shareholder No.">
-                <form.Field name="shareholderNumber">
-                  {(field) => (
-                    <Input
-                      placeholder="SH001"
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      onBlur={field.handleBlur}
-                    />
-                  )}
-                </form.Field>
-              </Field>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Member Type">
+              <Field label="Type of Member">
                 <form.Field name="memberType">
                   {(field) => (
                     <Select
@@ -254,26 +319,30 @@ function BasicInfoPage() {
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
                     >
-                      <option value="">Select</option>
+                      <option value="">Select Type</option>
                       <option value="ORDINARY">Ordinary</option>
                       <option value="SHAREHOLDER">Shareholder</option>
                     </Select>
                   )}
                 </form.Field>
               </Field>
-              <Field label="Join Date">
-                <form.Field name="joinDate">
-                  {(field) => (
-                    <Input
-                      type="date"
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      onBlur={field.handleBlur}
-                    />
-                  )}
-                </form.Field>
-              </Field>
             </div>
+
+            {/* Join Date */}
+            <Field label="Join Date">
+              <form.Field name="joinDate">
+                {(field) => (
+                  <Input
+                    type="date"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                )}
+              </form.Field>
+            </Field>
+
+            {/* Gender + DOB */}
             <div className="grid grid-cols-2 gap-3">
               <Field label="Gender">
                 <form.Field name="gender">
@@ -283,7 +352,7 @@ function BasicInfoPage() {
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
                     >
-                      <option value="">Select</option>
+                      <option value="">Select Gender</option>
                       <option value="MALE">Male</option>
                       <option value="FEMALE">Female</option>
                       <option value="OTHER">Other</option>
@@ -304,12 +373,14 @@ function BasicInfoPage() {
                 </form.Field>
               </Field>
             </div>
+
+            {/* Citizenship Number + Issued Date */}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Citizenship No.">
+              <Field label="Citizenship Number">
                 <form.Field name="citizenshipNumber">
                   {(field) => (
                     <Input
-                      placeholder="12-34-56789"
+                      placeholder="e.g. 123-456-789"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -330,11 +401,13 @@ function BasicInfoPage() {
                 </form.Field>
               </Field>
             </div>
+
+            {/* Citizenship Issued District */}
             <Field label="Citizenship Issued District">
               <form.Field name="citizenshipIssuedDistrict">
                 {(field) => (
                   <Input
-                    placeholder="Kathmandu"
+                    placeholder="District name"
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
@@ -342,12 +415,14 @@ function BasicInfoPage() {
                 )}
               </form.Field>
             </Field>
+
+            {/* NIN Number + NIN Issued Date */}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="NIN ID No.">
+              <Field label="NIN Number">
                 <form.Field name="ninIdNumber">
                   {(field) => (
                     <Input
-                      placeholder="1234567890123"
+                      placeholder="National ID Number"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -368,11 +443,13 @@ function BasicInfoPage() {
                 </form.Field>
               </Field>
             </div>
+
+            {/* NIN Issued District */}
             <Field label="NIN Issued District">
               <form.Field name="ninIssuedDistrict">
                 {(field) => (
                   <Input
-                    placeholder="Kathmandu"
+                    placeholder="District name"
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
@@ -380,13 +457,15 @@ function BasicInfoPage() {
                 )}
               </form.Field>
             </Field>
+
+            {/* Monthly Income + Nationality */}
             <div className="grid grid-cols-2 gap-3">
               <Field label="Monthly Income (NPR)">
                 <form.Field name="monthlyIncome">
                   {(field) => (
                     <Input
                       type="number"
-                      placeholder="25000"
+                      placeholder="0"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -398,7 +477,7 @@ function BasicInfoPage() {
                 <form.Field name="nationality">
                   {(field) => (
                     <Input
-                      readOnly
+                      placeholder="Nationality"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -407,47 +486,61 @@ function BasicInfoPage() {
                 </form.Field>
               </Field>
             </div>
-          </>
-        )}
 
-        {step === 2 && (
-          <>
-            <Field label="Province">
-              <form.Field name="provinceId">
-                {(field) => (
-                  <Select
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                  >
-                    <option value="">Select Province</option>
-                    {provinces?.map((p: Province) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </Select>
-                )}
-              </form.Field>
-            </Field>
-            <Field label="District">
-              <form.Field name="districtId">
-                {(field) => (
-                  <Select
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                  >
-                    <option value="">Select District</option>
-                    {districts?.map((d: District) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name}
-                      </option>
-                    ))}
-                  </Select>
-                )}
-              </form.Field>
-            </Field>
+            {/* Province + District */}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Province">
+                <form.Field name="provinceId">
+                  {(field) => (
+                    <Select
+                      value={field.state.value}
+                      onChange={(e) => {
+                        field.handleChange(e.target.value);
+                        setSelectedProvinceId(e.target.value);
+                        // Reset district and municipality
+                        form.setFieldValue("districtId", "");
+                        form.setFieldValue("municipalityId", "");
+                        setSelectedDistrictId("");
+                      }}
+                      onBlur={field.handleBlur}
+                    >
+                      <option value="">Select Province</option>
+                      {provinces?.map((p: Province) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </form.Field>
+              </Field>
+              <Field label="District">
+                <form.Field name="districtId">
+                  {(field) => (
+                    <Select
+                      value={field.state.value}
+                      onChange={(e) => {
+                        field.handleChange(e.target.value);
+                        setSelectedDistrictId(e.target.value);
+                        // Reset municipality
+                        form.setFieldValue("municipalityId", "");
+                      }}
+                      onBlur={field.handleBlur}
+                      disabled={!provinceId}
+                    >
+                      <option value="">Select District</option>
+                      {districts?.map((d: District) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </form.Field>
+              </Field>
+            </div>
+
+            {/* Municipality */}
             <Field label="Municipality / Rural Municipality">
               <form.Field name="municipalityId">
                 {(field) => (
@@ -455,8 +548,9 @@ function BasicInfoPage() {
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
+                    disabled={!districtId}
                   >
-                    <option value="">Select Municipality</option>
+                    <option value="">Municipality name</option>
                     {municipalities?.map((m: Municipality) => (
                       <option key={m.id} value={m.id}>
                         {m.name}
@@ -466,26 +560,25 @@ function BasicInfoPage() {
                 )}
               </form.Field>
             </Field>
+
+            {/* Ward Number + Street/Tole */}
             <div className="grid grid-cols-2 gap-3">
               <Field label="Ward Number">
                 <form.Field name="wardNumber">
                   {(field) => (
-                    <Select
+                    <Input
+                      type="number"
+                      placeholder="Ward No."
+                      min={1}
+                      max={35}
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
-                    >
-                      <option value="">Select Ward</option>
-                      {Array.from({ length: 35 }, (_, i) => (
-                        <option key={i + 1} value={i + 1}>
-                          {i + 1}
-                        </option>
-                      ))}
-                    </Select>
+                    />
                   )}
                 </form.Field>
               </Field>
-              <Field label="Tole / Street">
+              <Field label="Street / Tole">
                 <form.Field name="tole">
                   {(field) => (
                     <Input
@@ -498,6 +591,8 @@ function BasicInfoPage() {
                 </form.Field>
               </Field>
             </div>
+
+            {/* Religion + Occupation */}
             <div className="grid grid-cols-2 gap-3">
               <Field label="Religion">
                 <form.Field name="religion">
@@ -507,92 +602,104 @@ function BasicInfoPage() {
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
                     >
-                      <option value="">Select</option>
-                      {["HINDU", "MUSLIM", "BUDDHIST", "CHRISTIAN", "OTHER"].map(
-                        (r) => (
-                          <option key={r} value={r}>
-                            {r}
-                          </option>
-                        ),
-                      )}
-                    </Select>
-                  )}
-                </form.Field>
-              </Field>
-              <Field label="Education">
-                <form.Field name="education">
-                  {(field) => (
-                    <Select
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      onBlur={field.handleBlur}
-                    >
-                      <option value="">Select</option>
+                      <option value="">Select Religion</option>
                       {[
-                        "ILLITERATE",
-                        "LITERATE",
-                        "PRIMARY",
-                        "SECONDARY",
-                        "SLC_SEE",
-                        "INTERMEDIATE",
-                        "BACHELOR",
-                        "DIPLOMA",
-                        "MASTER",
-                        "DOCTORATE",
-                      ].map((e) => (
-                        <option key={e} value={e}>
-                          {e.replace(/_/g, " ")}
+                        "HINDU",
+                        "MUSLIM",
+                        "BUDDHIST",
+                        "CHRISTIAN",
+                        "OTHER",
+                      ].map((r) => (
+                        <option key={r} value={r}>
+                          {r.charAt(0) + r.slice(1).toLowerCase()}
                         </option>
                       ))}
                     </Select>
                   )}
                 </form.Field>
               </Field>
+              <Field label="Occupation">
+                <form.Field name="occupation">
+                  {(field) => (
+                    <Input
+                      placeholder="Occupation"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                    />
+                  )}
+                </form.Field>
+              </Field>
             </div>
-            <Field label="Occupation">
-              <form.Field name="occupation">
+
+            {/* Education */}
+            <Field label="Education">
+              <form.Field name="education">
                 {(field) => (
-                  <Input
-                    placeholder="Farmer / Business"
+                  <Select
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
-                  />
+                  >
+                    <option value="">Select Education</option>
+                    {[
+                      "ILLITERATE",
+                      "LITERATE",
+                      "PRIMARY",
+                      "SECONDARY",
+                      "SLC_SEE",
+                      "INTERMEDIATE",
+                      "BACHELOR",
+                      "DIPLOMA",
+                      "MASTER",
+                      "DOCTORATE",
+                    ].map((e) => (
+                      <option key={e} value={e}>
+                        {e.replace(/_/g, " ")}
+                      </option>
+                    ))}
+                  </Select>
                 )}
               </form.Field>
             </Field>
-            <Field label="Contact Number">
-              <form.Field name="contactNumber">
-                {(field) => (
-                  <Input
-                    type="tel"
-                    placeholder="9779810223471"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                  />
-                )}
-              </form.Field>
-            </Field>
-            <Field label="Mobile Number">
-              <form.Field name="mobileNumber">
-                {(field) => (
-                  <Input
-                    type="tel"
-                    placeholder="9779810223471"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                  />
-                )}
-              </form.Field>
-            </Field>
+
+            {/* Contact + Mobile */}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Contact Number">
+                <form.Field name="contactNumber">
+                  {(field) => (
+                    <Input
+                      type="tel"
+                      placeholder="Contact number"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                    />
+                  )}
+                </form.Field>
+              </Field>
+              <Field label="Mobile Number">
+                <form.Field name="mobileNumber">
+                  {(field) => (
+                    <Input
+                      type="tel"
+                      placeholder="+977..."
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                    />
+                  )}
+                </form.Field>
+              </Field>
+            </div>
+
+            {/* Email */}
             <Field label="Email">
               <form.Field name="email">
                 {(field) => (
                   <Input
                     type="email"
-                    placeholder="user@example.com"
+                    placeholder="email@example.com"
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
@@ -600,11 +707,13 @@ function BasicInfoPage() {
                 )}
               </form.Field>
             </Field>
+
+            {/* Temporary Address */}
             <Field label="Temporary Address">
               <form.Field name="temporaryAddress">
                 {(field) => (
                   <Input
-                    placeholder="Temporary address"
+                    placeholder="Full address"
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
@@ -612,104 +721,122 @@ function BasicInfoPage() {
                 )}
               </form.Field>
             </Field>
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <p className="text-sm font-medium text-gray-700">
-              Genealogy Information — Fill 3 generations
-            </p>
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="space-y-3 rounded-xl border border-gray-200 bg-white p-4"
-              >
-                <p className="text-xs font-medium text-gray-500">
-                  {i === 0
-                    ? "Grandfather/Grandmother"
-                    : i === 1
-                      ? "Father/Mother"
-                      : "Husband/Wife"}
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Name (English)">
-                    <form.Field name={`genealogy_${i}_nameEn` as never}>
-                      {(field) => (
-                        <Input
-                          placeholder="Name in English"
-                          value={field.state.value as string}
-                          onChange={(e) => field.handleChange(e.target.value as never)}
-                          onBlur={field.handleBlur}
-                        />
-                      )}
-                    </form.Field>
-                  </Field>
-                  <Field label="Name (Nepali)">
-                    <form.Field name={`genealogy_${i}_nameNp` as never}>
-                      {(field) => (
-                        <Input
-                          placeholder="नाम नेपालीमा"
-                          value={field.state.value as string}
-                          onChange={(e) => field.handleChange(e.target.value as never)}
-                          onBlur={field.handleBlur}
-                        />
-                      )}
-                    </form.Field>
-                  </Field>
-                </div>
-              </div>
-            ))}
-          </>
-        )}
-
-        {/* Navigation */}
-        <div className="flex gap-3 pt-4">
-          {step > 1 && (
-            <button
-              type="button"
-              onClick={() => setStep(step - 1)}
-              className="flex-1 rounded-xl border border-gray-300 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              Back
-            </button>
-          )}
-          {step < 3 && (
-            <button
-              type="button"
-              onClick={() => {
-                handleSave(form.state.values);
-                setStep(step + 1);
-              }}
-              className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-            >
-              Continue <ChevronRight size={16} />
-            </button>
-          )}
-          {step === 3 && (
-            <button
-              type="button"
-              onClick={() => {
-                handleSave(form.state.values);
-                submitMutation.mutate();
-              }}
-              disabled={submitMutation.isPending || saveMutation.isPending}
-              className="flex-[2] rounded-xl bg-green-600 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
-            >
-              {submitMutation.isPending ? "Submitting..." : "Save & Continue"}
-            </button>
-          )}
+          </div>
         </div>
 
+        {/* Genealogy Information */}
+        <div className="rounded-2xl bg-white p-5 shadow-sm">
+          <h2 className="mb-5 text-base font-bold text-gray-900">
+            Genealogy Information
+          </h2>
+          <div className="space-y-4">
+            {/* Relation */}
+            <Field label="Relation">
+              <form.Field name="genealogy_relation">
+                {(field) => (
+                  <Input
+                    placeholder="Father, Mother, etc."
+                    value={field.state.value as string}
+                    onChange={(e) =>
+                      field.handleChange(e.target.value as never)
+                    }
+                    onBlur={field.handleBlur}
+                  />
+                )}
+              </form.Field>
+            </Field>
+
+            {/* Name + Surname (English) */}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Name (English)">
+                <form.Field name="genealogy_nameEn">
+                  {(field) => (
+                    <Input
+                      placeholder="Name"
+                      value={field.state.value as string}
+                      onChange={(e) =>
+                        field.handleChange(e.target.value as never)
+                      }
+                      onBlur={field.handleBlur}
+                    />
+                  )}
+                </form.Field>
+              </Field>
+              <Field label="Surname (English)">
+                <form.Field name="genealogy_surnameEn">
+                  {(field) => (
+                    <Input
+                      placeholder="Surname"
+                      value={field.state.value as string}
+                      onChange={(e) =>
+                        field.handleChange(e.target.value as never)
+                      }
+                      onBlur={field.handleBlur}
+                    />
+                  )}
+                </form.Field>
+              </Field>
+            </div>
+
+            {/* नाम + थर (Nepali) */}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="नाम (Nepali)">
+                <form.Field name="genealogy_nameNp">
+                  {(field) => (
+                    <Input
+                      placeholder="नाम"
+                      value={field.state.value as string}
+                      onChange={(e) =>
+                        field.handleChange(e.target.value as never)
+                      }
+                      onBlur={field.handleBlur}
+                    />
+                  )}
+                </form.Field>
+              </Field>
+              <Field label="थर (Nepali)">
+                <form.Field name="genealogy_surnameNp">
+                  {(field) => (
+                    <Input
+                      placeholder="थर"
+                      value={field.state.value as string}
+                      onChange={(e) =>
+                        field.handleChange(e.target.value as never)
+                      }
+                      onBlur={field.handleBlur}
+                    />
+                  )}
+                </form.Field>
+              </Field>
+            </div>
+          </div>
+        </div>
+
+        {/* Continue button */}
         <button
           type="button"
-          onClick={() => handleSave(form.state.values)}
+          onClick={() => {
+            handleSave(form.state.values as Record<string, unknown>);
+            navigate({ to: "/app/kyc/mandatory" });
+          }}
           disabled={saveMutation.isPending}
-          className="w-full rounded-xl border border-gray-300 py-2 text-sm text-gray-500 transition hover:bg-gray-50"
+          className="w-full rounded-2xl bg-teal-800 py-4 text-base font-semibold text-white transition active:scale-95 disabled:opacity-50"
+        >
+          {saveMutation.isPending ? "Saving..." : "Continue to Mandatory →"}
+        </button>
+
+        {/* Save as Draft */}
+        <button
+          type="button"
+          onClick={() =>
+            handleSave(form.state.values as Record<string, unknown>)
+          }
+          disabled={saveMutation.isPending}
+          className="w-full rounded-2xl border border-gray-300 py-3 text-sm text-gray-500 transition hover:bg-gray-50"
         >
           {saveMutation.isPending ? "Saving..." : "Save as Draft"}
         </button>
-      </form>
+      </div>
     </div>
   );
 }

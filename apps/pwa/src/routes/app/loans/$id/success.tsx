@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CheckCircle2, CreditCard } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
 import { getToken } from "../../../../lib/storage";
 
@@ -26,78 +26,60 @@ function LoanSuccessPage() {
   });
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-6">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-            <CheckCircle2 size={32} className="text-green-600" />
+    <div className="flex min-h-screen flex-col items-center justify-center bg-surface px-6 py-12">
+      <div className="w-full max-w-sm space-y-6">
+        {/* Success icon */}
+        <div className="flex flex-col items-center text-center gap-4">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-container">
+            <CheckCircle2 size={40} className="text-primary" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900">
-            Application Submitted!
-          </h1>
-          <p className="mt-2 text-sm text-gray-500">
-            Your loan application has been submitted successfully.
-          </p>
+          <div>
+            <h1 className="font-headline text-2xl font-bold text-on-surface">Application Submitted!</h1>
+            <p className="mt-2 text-sm text-on-surface-variant leading-relaxed">
+              Your loan application has been submitted successfully. You will be notified once it is reviewed.
+            </p>
+          </div>
+        </div>
 
-          {loan && (
-            <div className="mt-6 w-full rounded-xl bg-gray-50 p-4 text-left">
-              <div className="mb-3 flex items-center gap-2">
-                <CreditCard size={16} className="text-gray-400" />
-                <span className="text-xs font-medium text-gray-500 uppercase">
-                  Reference Number
-                </span>
-              </div>
-              <p className="font-mono text-lg font-bold text-gray-900">
-                {loan.referenceNumber}
+        {/* Loan summary card */}
+        {loan && (
+          <div className="rounded-xl bg-surface-container-lowest shadow-sm overflow-hidden">
+            <div className="px-5 py-4 bg-surface-container-low">
+              <p className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant font-headline">
+                Reference Number
               </p>
-              <div className="mt-3 grid grid-cols-2 gap-3 border-t border-gray-200 pt-3">
-                <div>
-                  <span className="block text-xs text-gray-400">Amount</span>
-                  <span className="text-sm font-medium">
-                    NPR {loan.loanAmount?.toLocaleString() ?? "—"}
-                  </span>
-                </div>
-                <div>
-                  <span className="block text-xs text-gray-400">Purpose</span>
-                  <span className="text-sm font-medium">
-                    {loan.purpose?.replace("_", " ") ?? "—"}
-                  </span>
-                </div>
-                <div>
-                  <span className="block text-xs text-gray-400">Duration</span>
-                  <span className="text-sm font-medium">
-                    {loan.duration?.replace("_", " ") ?? "—"}
-                  </span>
-                </div>
-                <div>
-                  <span className="block text-xs text-gray-400">Status</span>
-                  <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
-                    Submitted
-                  </span>
-                </div>
-              </div>
+              <p className="font-mono text-xl font-bold text-on-surface mt-1">{loan.referenceNumber}</p>
             </div>
-          )}
-
-          <p className="mt-4 text-xs text-gray-400">
-            You will receive an SMS and in-app notification when your
-            application is reviewed.
-          </p>
-
-          <div className="mt-6 flex w-full flex-col gap-3">
-            <Link
-              to="/app/loans"
-              className="w-full rounded-xl border border-gray-200 py-3 text-center text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              View My Loans
-            </Link>
-            <Link
-              to="/app/dashboard"
-              className="w-full rounded-xl bg-blue-600 py-3 text-center text-sm font-semibold text-white hover:bg-blue-700"
-            >
-              Back to Dashboard
-            </Link>
+            <div className="grid grid-cols-2 gap-px bg-surface-container-low">
+              {[
+                { label: "Amount", value: `NPR ${loan.loanAmount?.toLocaleString() ?? "—"}` },
+                { label: "Purpose", value: loan.purpose?.replace("_", " ") ?? "—" },
+                { label: "Duration", value: loan.duration?.replace(/_/g, " ") ?? "—" },
+                { label: "Status", value: "Submitted", className: "text-secondary font-semibold" },
+              ].map(({ label, value, className }) => (
+                <div key={label} className="bg-surface-container-lowest px-5 py-4">
+                  <span className="block text-xs text-on-surface-variant">{label}</span>
+                  <span className={`mt-0.5 block text-sm font-medium text-on-surface ${className ?? ""}`}>{value}</span>
+                </div>
+              ))}
+            </div>
           </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex flex-col gap-3">
+          <Link
+            to="/app/dashboard"
+            className="w-full rounded-lg bg-primary py-3.5 text-center text-sm font-semibold text-on-primary transition active:scale-95 hover:bg-primary-dim"
+          >
+            Back to Dashboard
+          </Link>
+          <Link
+            to="/app/loans"
+            className="w-full rounded-lg bg-surface-container-high py-3.5 text-center text-sm font-semibold text-on-surface transition active:scale-95 hover:bg-surface-container"
+          >
+            View My Loans
+          </Link>
         </div>
       </div>
     </div>

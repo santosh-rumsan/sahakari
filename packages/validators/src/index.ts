@@ -120,9 +120,11 @@ export const adminVerifyOtpSchema = z.object({
 });
 
 export const genealogyEntrySchema = z.object({
-  nameEn: z.string().min(1),
-  nameNp: z.string().min(1),
-  relation: z.enum(RELATION_TYPE),
+  nameEn: z.string().optional(),
+  surnameEn: z.string().optional(),
+  nameNp: z.string().optional(),
+  surnameNp: z.string().optional(),
+  relation: z.string().optional(),
 });
 
 export const kycBasicInfoSchema = z.object({

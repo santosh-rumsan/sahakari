@@ -54,9 +54,18 @@ async function bootstrap() {
     .filter(Boolean);
   const port = process.env.PORT ?? 4000;
 
+  // Check if wildcard origin is allowed
+  const allowAllOrigins = allowedOrigins.includes('*');
+
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      // Allow all origins if wildcard is configured
+      if (allowAllOrigins) {
         callback(null, true);
         return;
       }

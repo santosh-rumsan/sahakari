@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 
-export const Route = createFileRoute('/_app/login')({
+export const Route = createFileRoute('/login')({
   component: AdminLoginPage,
 })
 
@@ -20,7 +20,7 @@ function AdminLoginPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`${apiUrl}/v1/admin/auth/login`, {
+      const res = await fetch(`${apiUrl}/v1/auth/admin/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -40,14 +40,14 @@ function AdminLoginPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`${apiUrl}/v1/admin/auth/verify`, {
+      const res = await fetch(`${apiUrl}/v1/auth/admin/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message ?? 'Invalid OTP')
-      localStorage.setItem('adminToken', data.token)
+      localStorage.setItem('adminToken', data.accessToken)
       navigate({ to: '/dashboard' })
     } catch (err: any) {
       setError(err.message)

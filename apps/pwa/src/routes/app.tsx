@@ -3,6 +3,7 @@ import {
   createFileRoute,
   Link,
   Outlet,
+  redirect,
   useNavigate,
 } from "@tanstack/react-router";
 import {
@@ -25,8 +26,9 @@ const notifApi = createNotificationApi(apiUrl);
 
 export const Route = createFileRoute("/app")({
   beforeLoad: () => {
+    if (typeof window === "undefined") return;
     const token = getStorageItem("token");
-    if (!token) throw new Error("Not authenticated");
+    if (!token) throw redirect({ to: "/login" });
   },
   component: AppLayout,
 });
@@ -44,20 +46,12 @@ function AppLayout() {
     refetchInterval: 10000,
   });
 
-  const { data: loans } = useQuery({
-    queryKey: ["loans"],
-    queryFn: () => loanApi.listMine(token),
-    refetchInterval: 10000,
-  });
-
   const { data: notifications } = useQuery({
     queryKey: ["notifications"],
     queryFn: () => notifApi.list(token),
   });
 
   const unreadCount = notifications?.filter((n) => !n.isRead).length ?? 0;
-  const kycApproved = kyc?.status === "APPROVED";
-  const canApplyLoan = kycApproved;
 
   const handleLogout = () => {
     removeStorageItem("token");
@@ -66,88 +60,135 @@ function AppLayout() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Bottom nav for mobile */}
-      <div className="fixed right-0 bottom-0 left-0 z-50 flex items-center justify-around border-t border-gray-200 bg-white px-2 py-2 md:hidden">
+    <div className="bg-surface flex min-h-screen">
+      {/* Bottom nav — mobile */}
+      <nav className="fixed right-0 bottom-0 left-0 z-50 flex items-center justify-around rounded-t-xl bg-white/70 px-4 pt-3 pb-6 shadow-[0_-12px_32px_rgba(0,0,0,0.06)] backdrop-blur-2xl md:hidden">
         <Link
           to="/app/dashboard"
-          className="flex flex-col items-center gap-0.5 p-2 text-gray-500"
+          className="text-outline hover:text-primary flex flex-col items-center gap-0.5 px-5 py-2 transition-colors"
+          activeProps={{
+            className:
+              "flex flex-col items-center gap-0.5 px-5 py-2 bg-primary-container text-primary rounded-[2rem]",
+          }}
         >
-          <Shield size={20} />
-          <span className="text-xs">Home</span>
+          {({ isActive }) => (
+            <>
+              <Shield size={20} strokeWidth={isActive ? 2.5 : 1.5} />
+              <span className="font-label text-[10px] font-medium tracking-wide">
+                Home
+              </span>
+            </>
+          )}
         </Link>
         <Link
           to="/app/kyc"
-          className="flex flex-col items-center gap-0.5 p-2 text-gray-500"
+          className="text-outline hover:text-primary flex flex-col items-center gap-0.5 px-5 py-2 transition-colors"
+          activeProps={{
+            className:
+              "flex flex-col items-center gap-0.5 px-5 py-2 bg-primary-container text-primary rounded-[2rem]",
+          }}
         >
-          <FileText size={20} />
-          <span className="text-xs">KYC</span>
+          {({ isActive }) => (
+            <>
+              <FileText size={20} strokeWidth={isActive ? 2.5 : 1.5} />
+              <span className="font-label text-[10px] font-medium tracking-wide">
+                KYC
+              </span>
+            </>
+          )}
         </Link>
         <Link
           to="/app/loans"
-          className="flex flex-col items-center gap-0.5 p-2 text-gray-500"
+          className="text-outline hover:text-primary flex flex-col items-center gap-0.5 px-5 py-2 transition-colors"
+          activeProps={{
+            className:
+              "flex flex-col items-center gap-0.5 px-5 py-2 bg-primary-container text-primary rounded-[2rem]",
+          }}
         >
-          <CreditCard size={20} />
-          <span className="text-xs">Loans</span>
+          {({ isActive }) => (
+            <>
+              <CreditCard size={20} strokeWidth={isActive ? 2.5 : 1.5} />
+              <span className="font-label text-[10px] font-medium tracking-wide">
+                Loans
+              </span>
+            </>
+          )}
         </Link>
         <Link
           to="/app/passbook"
-          className="flex flex-col items-center gap-0.5 p-2 text-gray-500"
+          className="text-outline hover:text-primary flex flex-col items-center gap-0.5 px-5 py-2 transition-colors"
+          activeProps={{
+            className:
+              "flex flex-col items-center gap-0.5 px-5 py-2 bg-primary-container text-primary rounded-[2rem]",
+          }}
         >
-          <BookOpen size={20} />
-          <span className="text-xs">Passbook</span>
+          {({ isActive }) => (
+            <>
+              <BookOpen size={20} strokeWidth={isActive ? 2.5 : 1.5} />
+              <span className="font-label text-[10px] font-medium tracking-wide">
+                Passbook
+              </span>
+            </>
+          )}
         </Link>
         <Link
           to="/app/notifications"
-          className="relative flex flex-col items-center gap-0.5 p-2 text-gray-500"
+          className="text-outline hover:text-primary relative flex flex-col items-center gap-0.5 px-5 py-2 transition-colors"
+          activeProps={{
+            className:
+              "relative flex flex-col items-center gap-0.5 px-5 py-2 bg-primary-container text-primary rounded-[2rem]",
+          }}
         >
-          <Bell size={20} />
-          {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-              {unreadCount}
-            </span>
+          {({ isActive }) => (
+            <>
+              <Bell size={20} strokeWidth={isActive ? 2.5 : 1.5} />
+              {unreadCount > 0 && (
+                <span className="bg-error text-on-error absolute top-0 right-2 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold">
+                  {unreadCount}
+                </span>
+              )}
+              <span className="font-label text-[10px] font-medium tracking-wide">
+                Alerts
+              </span>
+            </>
           )}
-          <span className="text-xs">Alerts</span>
         </Link>
-        <button
-          onClick={handleLogout}
-          className="flex flex-col items-center gap-0.5 p-2 text-gray-500"
-        >
-          <LogOut size={20} />
-          <span className="text-xs">Logout</span>
-        </button>
-      </div>
+      </nav>
 
       {/* Desktop sidebar */}
-      <div className="hidden w-64 flex-col border-r border-gray-200 bg-white md:flex">
-        <div className="border-b border-gray-100 p-4">
-          <h1 className="text-lg font-bold text-gray-900">Sahakari</h1>
-          <p className="mt-1 text-xs text-gray-500">{user.cooperative ?? ""}</p>
+      <aside className="bg-surface-container-lowest hidden w-64 flex-col border-r-0 shadow-[4px_0_24px_rgba(0,0,0,0.04)] md:flex">
+        <div className="p-6 pb-4">
+          <h1 className="font-headline text-primary text-xl font-bold">
+            Sahakari
+          </h1>
+          <p className="text-on-surface-variant mt-0.5 text-xs">
+            {user.cooperative ?? ""}
+          </p>
         </div>
 
-        <nav className="flex-1 space-y-1 p-3">
-          <NavLink
+        <nav className="flex-1 space-y-1 px-3">
+          <SideNavLink
             to="/app/dashboard"
             icon={<Shield size={18} />}
             label="Dashboard"
           />
-          <NavLink
+          <SideNavLink
             to="/app/kyc"
             icon={<FileText size={18} />}
             label="KYC"
             badge={kyc?.status}
           />
-          <NavLink
+          <SideNavLink
             to="/app/loans"
             icon={<CreditCard size={18} />}
             label="My Loans"
           />
-          <NavLink
+          <SideNavLink
             to="/app/passbook"
             icon={<BookOpen size={18} />}
             label="Passbook"
           />
-          <NavLink
+          <SideNavLink
             to="/app/notifications"
             icon={<Bell size={18} />}
             label="Notifications"
@@ -155,29 +196,33 @@ function AppLayout() {
           />
         </nav>
 
-        <div className="border-t border-gray-100 p-4">
-          <p className="text-sm font-medium text-gray-900">
-            {user.fullName ?? ""}
-          </p>
-          <p className="text-xs text-gray-500">{user.phone ?? ""}</p>
-          <button
-            onClick={handleLogout}
-            className="mt-2 flex w-full items-center gap-2 text-sm text-gray-500 hover:text-red-600"
-          >
-            <LogOut size={14} /> Logout
-          </button>
+        <div className="p-4 pt-0">
+          <div className="bg-surface-container-low rounded-2xl p-4">
+            <p className="text-on-surface text-sm font-semibold">
+              {user.fullName ?? ""}
+            </p>
+            <p className="text-on-surface-variant text-xs">
+              {user.phone ?? ""}
+            </p>
+            <button
+              onClick={handleLogout}
+              className="text-on-surface-variant hover:text-error mt-3 flex items-center gap-2 text-sm transition-colors"
+            >
+              <LogOut size={14} /> Logout
+            </button>
+          </div>
         </div>
-      </div>
+      </aside>
 
       {/* Main content */}
-      <div className="flex-1 overflow-auto pb-20 md:pb-0">
+      <div className="flex-1 overflow-auto pb-28 md:pb-0">
         <Outlet />
       </div>
     </div>
   );
 }
 
-function NavLink({
+function SideNavLink({
   to,
   icon,
   label,
@@ -191,13 +236,16 @@ function NavLink({
   return (
     <Link
       to={to}
-      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-100"
-      activeProps={{ className: "bg-blue-50 text-blue-700" }}
+      className="text-on-surface-variant hover:bg-surface-container-low flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition"
+      activeProps={{
+        className:
+          "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium bg-primary-container text-primary transition",
+      }}
     >
       {icon}
       <span className="flex-1">{label}</span>
       {badge !== undefined && (
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-xs text-white">
+        <span className="bg-primary text-on-primary flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs">
           {badge}
         </span>
       )}

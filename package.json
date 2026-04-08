@@ -12,9 +12,10 @@
     "db:push": "dotenv -e .env -- pnpm --filter @rs/db db:push",
     "db:migrate": "dotenv -e .env -- pnpm --filter @rs/db db:migrate",
     "db:studio": "dotenv -e .env -- pnpm --filter @rs/db studio",
-    "dev": "turbo watch dev --continue",
-    "dev:api": "cd apps/api && pnpm dev",
-    "dev:web": "cd apps/web && pnpm dev",
+    "dev": "pnpm run dev:api & pnpm run dev:pwa & pnpm run dev:web",
+    "dev:api": "pnpm --filter api dev",
+    "dev:pwa": "pnpm --filter pwa dev",
+    "dev:web": "pnpm --filter web dev",
     "format": "turbo run format --continue -- --cache --cache-location .cache/.prettiercache",
     "format:fix": "turbo run format --continue -- --write --cache --cache-location .cache/.prettiercache",
     "lint": "turbo run lint --continue -- --cache --cache-location .cache/.eslintcache",
@@ -26,7 +27,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "clean": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' + && find . -name 'dist' -exec rm -rf '{}' + && find . -name '.next' -exec rm -rf '{}' + && find . -name '.turbo' -exec rm -rf '{}' + && find . -name '.output' -exec rm -rf '{}' +&& find . -name '.cache' -exec rm -rf '{}' +"
-  
+
   },
   "devDependencies": {
     "@rs/prettier-config": "workspace:*",

@@ -31,11 +31,20 @@ export const Route = createRootRoute({
         content:
           "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
       },
-      { name: "theme-color", content: "#2563eb" },
+      { name: "theme-color", content: "#0e6c52" },
       { title: "Sahakari App" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      {
+        rel: "preconnect",
+        href: "https://fonts.googleapis.com",
+      },
+      {
+        rel: "preconnect",
+        href: "https://fonts.gstatic.com",
+        crossOrigin: "anonymous",
+      },
     ],
   }),
   shellComponent: RootDocument,
@@ -48,7 +57,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="h-full bg-gray-50 font-sans antialiased">
+      <body className="h-full bg-surface text-on-surface antialiased">
         <QueryClientProvider client={queryClient}>
           {children}
         </QueryClientProvider>
@@ -61,13 +70,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 function NotFound() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
-      <h1 className="text-2xl font-semibold">Page not found</h1>
-      <p className="text-sm text-gray-500">
+      <h1 className="font-headline text-2xl font-semibold text-on-surface">Page not found</h1>
+      <p className="text-sm text-on-surface-variant">
         The page you requested does not exist.
       </p>
       <Link
         to="/"
-        className="text-sm text-blue-600 underline underline-offset-4"
+        className="text-sm font-medium text-primary underline underline-offset-4"
       >
         Back to home
       </Link>

@@ -1,8 +1,13 @@
-import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { Users, FileText, CreditCard, LayoutDashboard } from 'lucide-react'
 import { AppShell, IconSidebar } from '../components/layout'
 
 export const Route = createFileRoute('/_app')({
+  beforeLoad: () => {
+    if (!localStorage.getItem('adminToken')) {
+      throw redirect({ to: '/login' })
+    }
+  },
   component: AppLayout,
 })
 

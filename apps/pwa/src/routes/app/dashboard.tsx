@@ -23,31 +23,34 @@ export const Route = createFileRoute("/app/dashboard")({
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { icon: React.ReactNode; className: string }> = {
     APPROVED: {
-      icon: <CheckCircle2 size={14} />,
-      className: "bg-green-50 text-green-700",
+      icon: <CheckCircle2 size={12} />,
+      className: "bg-primary-container text-on-primary-container",
     },
     PENDING: {
-      icon: <Clock size={14} />,
-      className: "bg-yellow-50 text-yellow-700",
+      icon: <Clock size={12} />,
+      className: "bg-secondary-container text-on-secondary-container",
     },
     UNDER_REVIEW: {
-      icon: <AlertCircle size={14} />,
-      className: "bg-orange-50 text-orange-700",
+      icon: <AlertCircle size={12} />,
+      className: "bg-tertiary-container text-on-tertiary-container",
     },
     REJECTED: {
-      icon: <XCircle size={14} />,
-      className: "bg-red-50 text-red-700",
+      icon: <XCircle size={12} />,
+      className: "bg-error-container text-on-error",
     },
-    DRAFT: { icon: <Clock size={14} />, className: "bg-gray-50 text-gray-600" },
+    DRAFT: {
+      icon: <Clock size={12} />,
+      className: "bg-surface-container-high text-on-surface-variant",
+    },
     SUBMITTED: {
-      icon: <Clock size={14} />,
-      className: "bg-blue-50 text-blue-700",
+      icon: <Clock size={12} />,
+      className: "bg-secondary-container text-on-secondary-container",
     },
   };
   const cfg = map[status] ?? map["DRAFT"];
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${cfg.className}`}
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${cfg.className}`}
     >
       {cfg.icon} {status.replace("_", " ")}
     </span>
@@ -79,150 +82,190 @@ function DashboardPage() {
 
   const user = JSON.parse(getStorageItem("user") ?? "{}");
   const kycApproved = kyc?.status === "APPROVED";
+  const unreadCount = notifications?.filter((n) => !n.isRead).length ?? 0;
 
   return (
-    <div className="space-y-5 p-4">
-      <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-surface pb-32">
+      {/* Top App Bar */}
+      <header className="sticky top-0 z-40 flex items-center justify-between px-6 h-16 bg-surface/80 backdrop-blur-xl">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">
-            Welcome, {user.fullName ?? ""}
+          <p className="text-xs font-medium text-secondary">
+            Welcome back
+          </p>
+          <h1 className="font-headline text-lg font-bold text-on-surface leading-tight">
+            {user.fullName ?? ""}
           </h1>
-          <p className="text-sm text-gray-500">{user.cooperative ?? ""}</p>
         </div>
         <Link
           to="/app/notifications"
-          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm hover:bg-gray-50"
+          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-lowest shadow-sm hover:bg-surface-container-low transition-colors active:scale-95"
         >
-          <Bell size={18} className="text-gray-600" />
-          {(notifications?.filter((n) => !n.isRead).length ?? 0) > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-              {notifications?.filter((n) => !n.isRead).length}
+          <Bell size={18} className="text-on-surface-variant" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-error text-[10px] text-on-error font-bold">
+              {unreadCount}
             </span>
           )}
         </Link>
-      </div>
+      </header>
 
-      {/* KYC Status Card */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full ${kycApproved ? "bg-green-100" : kyc?.status === "REJECTED" ? "bg-red-100" : "bg-yellow-100"}`}
-            >
-              <FileText
-                size={20}
-                className={
+      <main className="px-6 space-y-8 pt-2">
+        {/* Editorial heading */}
+        <section>
+          <p className="text-on-surface-variant text-sm">{user.cooperative ?? ""}</p>
+          <h2 className="font-headline text-3xl font-bold text-on-surface tracking-tight leading-tight mt-1">
+            Your finances,<br />at a glance.
+          </h2>
+        </section>
+
+        {/* KYC & Loan Action Cards */}
+        <div className="grid grid-cols-1 gap-5">
+          {/* KYC Card */}
+          <div
+            className={`rounded-xl p-6 flex items-center justify-between shadow-sm ${
+              kycApproved
+                ? "bg-linear-to-br from-primary to-primary-dim text-on-primary"
+                : "bg-surface-container-lowest"
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <div
+                className={`flex h-12 w-12 items-center justify-center rounded-full ${
                   kycApproved
-                    ? "text-green-600"
+                    ? "bg-white/20"
                     : kyc?.status === "REJECTED"
-                      ? "text-red-600"
-                      : "text-yellow-600"
-                }
-              />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">
-                KYC Verification
-              </p>
-              <StatusBadge status={kyc?.status ?? "NOT_STARTED"} />
-            </div>
-          </div>
-          <Link
-            to="/app/kyc"
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${kycApproved ? "cursor-not-allowed bg-gray-100 text-gray-500" : "bg-blue-600 text-white hover:bg-blue-700"}`}
-          >
-            {kyc ? "View" : "Start"}
-          </Link>
-        </div>
-      </div>
-
-      {/* Loan Application Card */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full ${kycApproved ? "bg-blue-100" : "bg-gray-100"}`}
-            >
-              <CreditCard
-                size={20}
-                className={kycApproved ? "text-blue-600" : "text-gray-400"}
-              />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">
-                Apply for Loan
-              </p>
-              <p className="text-xs text-gray-500">
-                {kycApproved
-                  ? "KYC approved — you can apply"
-                  : "Complete KYC first"}
-              </p>
-            </div>
-          </div>
-          <Link
-            to={kycApproved ? "/app/loans/new" : "#"}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${kycApproved ? "bg-blue-600 text-white hover:bg-blue-700" : "cursor-not-allowed bg-gray-100 text-gray-400"}`}
-          >
-            Apply
-          </Link>
-        </div>
-      </div>
-
-      {/* Loan Applications List */}
-      {loans && loans.length > 0 && (
-        <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-gray-700">
-            My Loan Applications
-          </h2>
-          {loans.map((loan) => (
-            <Link
-              key={loan.id}
-              to={`/app/loans/${loan.id}`}
-              className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow"
-            >
+                      ? "bg-error-container"
+                      : "bg-surface-container-low"
+                }`}
+              >
+                <FileText
+                  size={22}
+                  className={
+                    kycApproved
+                      ? "text-on-primary"
+                      : kyc?.status === "REJECTED"
+                        ? "text-on-error-container"
+                        : "text-on-surface-variant"
+                  }
+                />
+              </div>
               <div>
-                <p className="text-sm font-medium text-gray-900">
-                  Ref: {loan.referenceNumber}
+                <p className={`text-sm font-semibold font-headline ${kycApproved ? "text-on-primary" : "text-on-surface"}`}>
+                  KYC Verification
                 </p>
-                <p className="text-xs text-gray-500">
-                  NPR {loan.loanAmount?.toLocaleString() ?? "—"} ·{" "}
-                  {loan.purpose?.replace("_", " ") ?? "—"}
-                </p>
-              </div>
-              <StatusBadge status={loan.status} />
-            </Link>
-          ))}
-        </div>
-      )}
-
-      {/* Recent Notifications */}
-      {notifications && notifications.length > 0 && (
-        <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-gray-700">
-            Recent Notifications
-          </h2>
-          {notifications.slice(0, 3).map((notif) => (
-            <div
-              key={notif.id}
-              className={`rounded-xl border p-4 ${notif.isRead ? "border-gray-100 bg-white" : "border-blue-200 bg-blue-50"}`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {notif.title}
-                  </p>
-                  <p className="mt-0.5 text-xs text-gray-500">
-                    {notif.message}
-                  </p>
-                </div>
-                <span className="text-xs whitespace-nowrap text-gray-400">
-                  {new Date(notif.createdAt).toLocaleDateString()}
-                </span>
+                <StatusBadge status={kyc?.status ?? "NOT_STARTED"} />
               </div>
             </div>
-          ))}
+            <Link
+              to="/app/kyc"
+              className={`rounded-full px-5 py-2 text-sm font-semibold transition active:scale-95 ${
+                kycApproved
+                  ? "bg-white/20 text-on-primary hover:bg-white/30"
+                  : "bg-primary text-on-primary hover:bg-primary-dim"
+              }`}
+            >
+              {kyc ? "View" : "Start"}
+            </Link>
+          </div>
+
+          {/* Loan Card */}
+          <div className="rounded-xl bg-surface-container-lowest p-6 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-4">
+              <div
+                className={`flex h-12 w-12 items-center justify-center rounded-full ${
+                  kycApproved ? "bg-secondary-container" : "bg-surface-container-low"
+                }`}
+              >
+                <CreditCard
+                  size={22}
+                  className={kycApproved ? "text-on-secondary-container" : "text-on-surface-variant"}
+                />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-on-surface font-headline">Apply for Loan</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">
+                  {kycApproved ? "KYC approved — you can apply" : "Complete KYC first"}
+                </p>
+              </div>
+            </div>
+            <Link
+              to={kycApproved ? "/app/loans/new" : "#"}
+              className={`rounded-full px-5 py-2 text-sm font-semibold transition active:scale-95 ${
+                kycApproved
+                  ? "bg-primary text-on-primary hover:bg-primary-dim"
+                  : "bg-surface-container-high text-on-surface-variant cursor-not-allowed"
+              }`}
+            >
+              Apply
+            </Link>
+          </div>
         </div>
-      )}
+
+        {/* Loan Applications */}
+        {loans && loans.length > 0 && (
+          <section className="space-y-4">
+            <h3 className="font-headline font-semibold text-on-surface">My Loan Applications</h3>
+            <div className="space-y-3">
+              {loans.map((loan) => (
+                <Link
+                  key={loan.id}
+                  to={`/app/loans/${loan.id}`}
+                  className="flex items-center justify-between rounded-xl bg-surface-container-lowest p-5 shadow-sm transition hover:bg-surface-container-low active:scale-[0.98]"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-on-surface">
+                      Ref: {loan.referenceNumber}
+                    </p>
+                    <p className="text-xs text-on-surface-variant mt-0.5">
+                      NPR {loan.loanAmount?.toLocaleString() ?? "—"} ·{" "}
+                      {loan.purpose?.replace("_", " ") ?? "—"}
+                    </p>
+                  </div>
+                  <StatusBadge status={loan.status} />
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Recent Notifications */}
+        {notifications && notifications.length > 0 && (
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-headline font-semibold text-on-surface">Recent Alerts</h3>
+              <Link to="/app/notifications" className="text-sm font-semibold text-primary">
+                See all
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {notifications.slice(0, 3).map((notif) => (
+                <div
+                  key={notif.id}
+                  className={`rounded-xl p-5 ${
+                    notif.isRead
+                      ? "bg-surface-container-lowest"
+                      : "bg-secondary-container"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <p className={`text-sm font-semibold ${notif.isRead ? "text-on-surface" : "text-on-secondary-container"}`}>
+                        {notif.title}
+                      </p>
+                      <p className={`mt-0.5 text-xs leading-relaxed ${notif.isRead ? "text-on-surface-variant" : "text-on-secondary-container"}`}>
+                        {notif.message}
+                      </p>
+                    </div>
+                    <span className="text-xs whitespace-nowrap text-on-surface-variant">
+                      {new Date(notif.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
     </div>
   );
 }

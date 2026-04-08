@@ -18,10 +18,11 @@ import type {
 const url = (baseUrl: string, path: string) => `${baseUrl}/v1${path}`;
 
 const fetch_ = async (input: RequestInfo, init?: RequestInit) => {
+  const hasBody = init?.body !== undefined && init.body !== null;
   const res = await fetch(input, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      ...(hasBody ? { "Content-Type": "application/json" } : {}),
       ...init?.headers,
     },
   });
@@ -115,7 +116,11 @@ export function createKycApi(baseUrl: string) {
         headers: headers(token),
       });
       if (res.status === 404) return null;
-      return fetch_(url(baseUrl, "/kyc/me"), { headers: headers(token) });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(err.message ?? "Request failed");
+      }
+      return res.json();
     },
 
     create: async (token: string): Promise<Kyc> => {

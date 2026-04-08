@@ -25,161 +25,145 @@ function LoanDetailPage() {
   });
 
   const statusConfig: Record<string, { className: string; label: string }> = {
-    APPROVED: { className: "bg-green-50 text-green-700", label: "Approved" },
-    REJECTED: { className: "bg-red-50 text-red-700", label: "Rejected" },
-    SUBMITTED: { className: "bg-blue-50 text-blue-700", label: "Submitted" },
-    UNDER_REVIEW: {
-      className: "bg-orange-50 text-orange-700",
-      label: "Under Review",
-    },
-    DRAFT: { className: "bg-gray-50 text-gray-600", label: "Draft" },
+    APPROVED: { className: "bg-primary-container text-on-primary-container", label: "Approved" },
+    REJECTED: { className: "bg-error-container text-on-error", label: "Rejected" },
+    SUBMITTED: { className: "bg-secondary-container text-on-secondary-container", label: "Submitted" },
+    UNDER_REVIEW: { className: "bg-tertiary-container text-on-tertiary-container", label: "Under Review" },
+    DRAFT: { className: "bg-surface-container-high text-on-surface-variant", label: "Draft" },
   };
 
   const tabs = ["Details", "Documents"];
   const [activeTab, setActiveTab] = useState(0);
 
-  if (isLoading)
-    return <div className="p-4 text-center text-gray-500">Loading...</div>;
-  if (!loan)
-    return <div className="p-4 text-center text-gray-500">Loan not found</div>;
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface">
+        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+  if (!loan) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface">
+        <p className="text-sm text-on-surface-variant">Loan not found</p>
+      </div>
+    );
+  }
 
   const status = statusConfig[loan.status] ?? statusConfig["DRAFT"];
 
   return (
-    <div className="p-4">
-      <div className="mb-4 flex items-center gap-3">
+    <div className="min-h-screen bg-surface pb-32">
+      {/* Header */}
+      <header className="sticky top-0 z-40 flex items-center gap-3 px-6 h-14 bg-surface/80 backdrop-blur-xl">
         <Link
           to="/app/loans"
-          className="flex items-center gap-1 text-sm text-gray-500"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-container-low text-on-surface-variant hover:bg-surface-container transition"
         >
-          <ChevronLeft size={16} /> Back
+          <ChevronLeft size={18} />
         </Link>
-      </div>
+        <h1 className="font-headline text-base font-semibold text-on-surface">Loan Detail</h1>
+      </header>
 
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          <p className="font-mono text-sm font-medium text-gray-500">
-            Ref: {loan.referenceNumber}
-          </p>
-          <h1 className="mt-1 text-xl font-bold text-gray-900">
+      <div className="px-6 pt-4 space-y-5">
+        {/* Hero info card */}
+        <div className="rounded-xl bg-linear-to-br from-primary to-primary-dim p-6 text-on-primary shadow-lg">
+          <p className="text-xs font-medium opacity-70 font-headline mb-1">Reference</p>
+          <p className="font-mono text-sm font-semibold opacity-90">{loan.referenceNumber}</p>
+          <p className="font-headline text-3xl font-bold tracking-tight mt-3">
             NPR {loan.loanAmount?.toLocaleString() ?? "—"}
-          </h1>
-          <p className="text-sm text-gray-500">
-            {loan.purpose?.replace("_", " ") ?? "—"}
           </p>
+          <p className="text-sm opacity-80 mt-1">{loan.purpose?.replace("_", " ") ?? "—"}</p>
+          <div className="mt-4">
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${status.className}`}>
+              {status.label}
+            </span>
+          </div>
         </div>
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-medium ${status.className}`}
-        >
-          {status.label}
-        </span>
-      </div>
 
-      {loan.status === "REJECTED" && loan.rejectionReason && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
-          <p className="text-xs font-medium text-red-700">
-            Rejection Reason: {loan.rejectionReason}
-          </p>
+        {/* Rejection reason */}
+        {loan.status === "REJECTED" && loan.rejectionReason && (
+          <div className="rounded-xl bg-error-container px-5 py-4">
+            <p className="text-xs font-semibold text-on-error-container">
+              Rejection Reason: {loan.rejectionReason}
+            </p>
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div className="flex gap-2 rounded-2xl bg-surface-container-low p-1.5">
+          {tabs.map((tab, i) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(i)}
+              className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                activeTab === i
+                  ? "bg-surface-container-lowest text-on-surface shadow-sm"
+                  : "text-on-surface-variant hover:text-on-surface"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
-      )}
 
-      <div className="mb-4 flex gap-1 rounded-lg bg-gray-100 p-1">
-        {tabs.map((tab, i) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(i)}
-            className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition ${activeTab === i ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"}`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+        {/* Details tab */}
+        {activeTab === 0 && (
+          <div className="rounded-xl bg-surface-container-lowest shadow-sm overflow-hidden">
+            {[
+              { label: "Duration", value: loan.duration?.replace(/_/g, " ") },
+              { label: "Collateral", value: loan.collateralType?.replace("_", " ") },
+              { label: "Guarantor", value: loan.guarantorName },
+              { label: "Guarantor Address", value: loan.guarantorAddress },
+            ]
+              .filter((row) => row.value)
+              .map(({ label, value }, i, arr) => (
+                <div
+                  key={label}
+                  className={`flex items-center justify-between px-5 py-4 ${i < arr.length - 1 ? "border-b border-surface-container-low" : ""}`}
+                >
+                  <span className="text-sm text-on-surface-variant">{label}</span>
+                  <span className="text-sm font-semibold text-on-surface">{value}</span>
+                </div>
+              ))}
+          </div>
+        )}
 
-      {activeTab === 0 && (
-        <div className="space-y-4">
-          {[
-            { label: "Duration", value: loan.duration?.replace("_", " ") },
-            {
-              label: "Collateral",
-              value: loan.collateralType?.replace("_", " "),
-            },
-            { label: "Guarantor", value: loan.guarantorName },
-            { label: "Guarantor Address", value: loan.guarantorAddress },
-          ].map(({ label, value }) =>
-            value ? (
-              <div
-                key={label}
-                className="flex justify-between border-b border-gray-100 pb-3"
-              >
-                <span className="text-sm text-gray-500">{label}</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {value}
-                </span>
+        {/* Documents tab */}
+        {activeTab === 1 && (
+          <div className="space-y-4">
+            {loan.citizenshipFrontUrl && (
+              <div className="rounded-xl bg-surface-container-lowest p-4 shadow-sm">
+                <p className="mb-3 text-xs font-medium text-on-surface-variant">Citizenship (Front)</p>
+                <img src={loan.citizenshipFrontUrl} alt="Citizenship Front" className="w-full rounded-xl" />
               </div>
-            ) : null,
-          )}
-        </div>
-      )}
-
-      {activeTab === 1 && (
-        <div className="space-y-4">
-          {loan.citizenshipFrontUrl && (
-            <div>
-              <p className="mb-2 text-xs text-gray-500">Citizenship (Front)</p>
-              <img
-                src={loan.citizenshipFrontUrl}
-                alt="Citizenship Front"
-                className="w-full rounded-lg border"
-              />
-            </div>
-          )}
-          {loan.citizenshipBackUrl && (
-            <div>
-              <p className="mb-2 text-xs text-gray-500">Citizenship (Back)</p>
-              <img
-                src={loan.citizenshipBackUrl}
-                alt="Citizenship Back"
-                className="w-full rounded-lg border"
-              />
-            </div>
-          )}
-          {loan.passportPhotoUrl && (
-            <div>
-              <p className="mb-2 text-xs text-gray-500">Passport Photo</p>
-              <img
-                src={loan.passportPhotoUrl}
-                alt="Photo"
-                className="h-48 w-full rounded-lg border object-cover"
-              />
-            </div>
-          )}
-          {loan.salarySheetUrl && (
-            <div>
-              <p className="mb-2 text-xs text-gray-500">Salary Sheet</p>
-              <img
-                src={loan.salarySheetUrl}
-                alt="Salary Sheet"
-                className="w-full rounded-lg border"
-              />
-            </div>
-          )}
-          {loan.propertyDocumentUrl && (
-            <div>
-              <p className="mb-2 text-xs text-gray-500">Property Document</p>
-              <img
-                src={loan.propertyDocumentUrl}
-                alt="Property Document"
-                className="w-full rounded-lg border"
-              />
-            </div>
-          )}
-          {!loan.citizenshipFrontUrl &&
-            !loan.passportPhotoUrl &&
-            !loan.salarySheetUrl && (
-              <p className="text-sm text-gray-400">No documents uploaded.</p>
             )}
-        </div>
-      )}
+            {loan.citizenshipBackUrl && (
+              <div className="rounded-xl bg-surface-container-lowest p-4 shadow-sm">
+                <p className="mb-3 text-xs font-medium text-on-surface-variant">Citizenship (Back)</p>
+                <img src={loan.citizenshipBackUrl} alt="Citizenship Back" className="w-full rounded-xl" />
+              </div>
+            )}
+            {loan.passportPhotoUrl && (
+              <div className="rounded-xl bg-surface-container-lowest p-4 shadow-sm">
+                <p className="mb-3 text-xs font-medium text-on-surface-variant">Passport Photo</p>
+                <img src={loan.passportPhotoUrl} alt="Photo" className="h-48 w-full rounded-xl object-cover" />
+              </div>
+            )}
+            {loan.propertyDocumentUrl && (
+              <div className="rounded-xl bg-surface-container-lowest p-4 shadow-sm">
+                <p className="mb-3 text-xs font-medium text-on-surface-variant">Property Document</p>
+                <img src={loan.propertyDocumentUrl} alt="Property Document" className="w-full rounded-xl" />
+              </div>
+            )}
+            {!loan.citizenshipFrontUrl && !loan.passportPhotoUrl && (
+              <div className="rounded-xl bg-surface-container-low py-10 text-center">
+                <p className="text-sm text-on-surface-variant">No documents uploaded.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
