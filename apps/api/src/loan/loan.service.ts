@@ -10,6 +10,12 @@ import { Prisma } from '@rs/db';
 
 @Injectable()
 export class LoanService {
+  private readonly loanEligibleKycStatuses = [
+    'PENDING',
+    'UNDER_REVIEW',
+    'APPROVED',
+  ] as const;
+
   constructor(
     private prisma: PrismaService,
     private notif: NotificationService,
@@ -112,9 +118,14 @@ export class LoanService {
       throw new BadRequestException('Loan already submitted');
 
     const kyc = await this.prisma.kyc.findUnique({ where: { userId } });
-    if (kyc?.status !== 'APPROVED') {
+    if (
+      !kyc ||
+      !this.loanEligibleKycStatuses.includes(
+        kyc.status as (typeof this.loanEligibleKycStatuses)[number],
+      )
+    ) {
       throw new BadRequestException(
-        'KYC must be approved before submitting a loan application',
+        'KYC must be submitted before submitting a loan application',
       );
     }
 

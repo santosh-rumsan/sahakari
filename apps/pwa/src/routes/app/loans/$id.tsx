@@ -13,6 +13,34 @@ export const Route = createFileRoute("/app/loans/$id")({
   component: LoanDetailPage,
 });
 
+function isPdf(url: string) {
+  return url.toLowerCase().includes(".pdf");
+}
+
+function DocumentPreview({ label, url }: { label: string; url: string }) {
+  return (
+    <div className="rounded-xl bg-surface-container-lowest p-4 shadow-sm">
+      <p className="mb-3 text-xs font-medium text-on-surface-variant">{label}</p>
+      {isPdf(url) ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="block rounded-xl bg-surface-container-low px-4 py-6 text-center text-sm font-medium text-primary"
+        >
+          Open PDF
+        </a>
+      ) : (
+        <img
+          src={url}
+          alt={label}
+          className={label === "Passport Photo" ? "h-48 w-full rounded-xl object-cover" : "w-full rounded-xl"}
+        />
+      )}
+    </div>
+  );
+}
+
 function LoanDetailPage() {
   const { id } = Route.useParams();
   const token = getToken();
@@ -133,28 +161,16 @@ function LoanDetailPage() {
         {activeTab === 1 && (
           <div className="space-y-4">
             {loan.citizenshipFrontUrl && (
-              <div className="rounded-xl bg-surface-container-lowest p-4 shadow-sm">
-                <p className="mb-3 text-xs font-medium text-on-surface-variant">Citizenship (Front)</p>
-                <img src={loan.citizenshipFrontUrl} alt="Citizenship Front" className="w-full rounded-xl" />
-              </div>
+              <DocumentPreview label="Citizenship (Front)" url={loan.citizenshipFrontUrl} />
             )}
             {loan.citizenshipBackUrl && (
-              <div className="rounded-xl bg-surface-container-lowest p-4 shadow-sm">
-                <p className="mb-3 text-xs font-medium text-on-surface-variant">Citizenship (Back)</p>
-                <img src={loan.citizenshipBackUrl} alt="Citizenship Back" className="w-full rounded-xl" />
-              </div>
+              <DocumentPreview label="Citizenship (Back)" url={loan.citizenshipBackUrl} />
             )}
             {loan.passportPhotoUrl && (
-              <div className="rounded-xl bg-surface-container-lowest p-4 shadow-sm">
-                <p className="mb-3 text-xs font-medium text-on-surface-variant">Passport Photo</p>
-                <img src={loan.passportPhotoUrl} alt="Photo" className="h-48 w-full rounded-xl object-cover" />
-              </div>
+              <DocumentPreview label="Passport Photo" url={loan.passportPhotoUrl} />
             )}
             {loan.propertyDocumentUrl && (
-              <div className="rounded-xl bg-surface-container-lowest p-4 shadow-sm">
-                <p className="mb-3 text-xs font-medium text-on-surface-variant">Property Document</p>
-                <img src={loan.propertyDocumentUrl} alt="Property Document" className="w-full rounded-xl" />
-              </div>
+              <DocumentPreview label="Property Document" url={loan.propertyDocumentUrl} />
             )}
             {!loan.citizenshipFrontUrl && !loan.passportPhotoUrl && (
               <div className="rounded-xl bg-surface-container-low py-10 text-center">

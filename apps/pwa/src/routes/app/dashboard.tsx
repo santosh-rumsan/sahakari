@@ -15,6 +15,7 @@ import { createKycApi, createLoanApi, createNotificationApi } from "@rs/sdk";
 import { getToken, getStorageItem } from "../../lib/storage";
 
 const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
+const LOAN_ELIGIBLE_KYC_STATUSES = ["PENDING", "UNDER_REVIEW", "APPROVED"] as const;
 
 export const Route = createFileRoute("/app/dashboard")({
   component: DashboardPage,
@@ -81,6 +82,7 @@ function DashboardPage() {
   });
 
   const user = JSON.parse(getStorageItem("user") ?? "{}");
+  const loanEligible = !!kyc?.status && LOAN_ELIGIBLE_KYC_STATUSES.includes(kyc.status as (typeof LOAN_ELIGIBLE_KYC_STATUSES)[number]);
   const kycApproved = kyc?.status === "APPROVED";
   const unreadCount = notifications?.filter((n) => !n.isRead).length ?? 0;
 
@@ -173,31 +175,37 @@ function DashboardPage() {
             <div className="flex items-center gap-4">
               <div
                 className={`flex h-12 w-12 items-center justify-center rounded-full ${
-                  kycApproved ? "bg-secondary-container" : "bg-surface-container-low"
+                  loanEligible ? "bg-secondary-container" : "bg-surface-container-low"
                 }`}
               >
                 <CreditCard
                   size={22}
-                  className={kycApproved ? "text-on-secondary-container" : "text-on-surface-variant"}
+                  className={loanEligible ? "text-on-secondary-container" : "text-on-surface-variant"}
                 />
               </div>
               <div>
                 <p className="text-sm font-semibold text-on-surface font-headline">Apply for Loan</p>
                 <p className="text-xs text-on-surface-variant mt-0.5">
-                  {kycApproved ? "KYC approved — you can apply" : "Complete KYC first"}
+                  {loanEligible ? "KYC submitted — you can apply" : "Submit KYC first"}
                 </p>
               </div>
             </div>
-            <Link
-              to={kycApproved ? "/app/loans/new" : "#"}
-              className={`rounded-full px-5 py-2 text-sm font-semibold transition active:scale-95 ${
-                kycApproved
-                  ? "bg-primary text-on-primary hover:bg-primary-dim"
-                  : "bg-surface-container-high text-on-surface-variant cursor-not-allowed"
-              }`}
-            >
-              Apply
-            </Link>
+            {loanEligible ? (
+              <Link
+                to="/app/loans/new"
+                className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-on-primary transition hover:bg-primary-dim active:scale-95"
+              >
+                Apply
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="cursor-not-allowed rounded-full bg-surface-container-high px-5 py-2 text-sm font-semibold text-on-surface-variant"
+              >
+                Apply
+              </button>
+            )}
           </div>
         </div>
 
@@ -209,7 +217,8 @@ function DashboardPage() {
               {loans.map((loan) => (
                 <Link
                   key={loan.id}
-                  to={`/app/loans/${loan.id}`}
+                  to="/app/loans/$id"
+                  params={{ id: loan.id }}
                   className="flex items-center justify-between rounded-xl bg-surface-container-lowest p-5 shadow-sm transition hover:bg-surface-container-low active:scale-[0.98]"
                 >
                   <div>

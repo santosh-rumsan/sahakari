@@ -1182,6 +1182,18 @@ async function main() {
     console.log(`  Municipality for ${districtName}: ${municipalities.length}`);
   }
 
+  // Seed admin user
+  await prisma.adminUser.upsert({
+    where: { email: "sahakari@maile.uk" },
+    update: {},
+    create: {
+      email: "sahakari@maile.uk",
+      name: "Sahakari",
+      role: "SUPER_ADMIN",
+    },
+  });
+  console.log("  Admin user: sahakari@maile.uk");
+
   console.log("Seed complete!");
 }
 

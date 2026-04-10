@@ -1,11 +1,12 @@
 import type { District, Municipality, Province } from "@rs/sdk";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { createGeoApi, createKycApi } from "@rs/sdk";
 
+import { getKycSubmitErrorsForRoute } from "../../../lib/kyc-submit-errors";
 import { getToken } from "../../../lib/storage";
 
 const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
@@ -19,13 +20,20 @@ export const Route = createFileRoute("/app/kyc/basic-info")({
 function Field({
   label,
   children,
+  fieldKey,
+  hasError = false,
 }: {
   label: string;
   children: React.ReactNode;
+  fieldKey?: string;
+  hasError?: boolean;
 }) {
   return (
-    <div>
-      <label className="mb-1 block text-sm font-semibold text-gray-800">
+    <div
+      id={fieldKey ? `kyc-field-${fieldKey}` : undefined}
+      className={hasError ? "rounded-2xl border border-red-300 bg-red-50 p-3" : ""}
+    >
+      <label className={`mb-1 block text-sm font-semibold ${hasError ? "text-red-700" : "text-gray-800"}`}>
         {label}
       </label>
       {children}
@@ -103,6 +111,8 @@ function BasicInfoPage() {
       kycApi.updateBasicInfo(token, kyc!.id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["kyc"] }),
   });
+  const routeErrors = getKycSubmitErrorsForRoute("/app/kyc/basic-info");
+  const errorFields = new Set(routeErrors.map((error) => error.field));
 
   // Parse existing genealogy JSON
   const existingGenealogy = (() => {
@@ -181,6 +191,12 @@ function BasicInfoPage() {
       </div>
     );
   }
+
+  useEffect(() => {
+    if (routeErrors.length === 0) return;
+    const element = document.getElementById(`kyc-field-${routeErrors[0].field}`);
+    element?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [routeErrors]);
 
   const handleSave = (data: Record<string, unknown>) => {
     // Convert empty strings to null for enum and FK fields (Prisma rejects empty strings for these)
@@ -263,6 +279,11 @@ function BasicInfoPage() {
 
       {/* Form */}
       <div className="space-y-5 p-5">
+        {routeErrors.length > 0 && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            Complete the highlighted required fields first.
+          </div>
+        )}
         {/* Basic Information */}
         <div className="rounded-2xl bg-white p-5 shadow-sm">
           <h2 className="mb-5 text-lg font-bold text-gray-900">
@@ -271,7 +292,7 @@ function BasicInfoPage() {
           <div className="space-y-4">
             {/* Full Name row */}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Full Name (English)">
+              <Field label="Full Name (English)" fieldKey="fullNameEn" hasError={errorFields.has("fullNameEn")}>
                 <form.Field name="fullNameEn">
                   {(field) => (
                     <Input
@@ -283,7 +304,7 @@ function BasicInfoPage() {
                   )}
                 </form.Field>
               </Field>
-              <Field label="Full Name (Nepali)">
+              <Field label="Full Name (Nepali)" fieldKey="fullNameNp" hasError={errorFields.has("fullNameNp")}>
                 <form.Field name="fullNameNp">
                   {(field) => (
                     <Input
@@ -299,7 +320,7 @@ function BasicInfoPage() {
 
             {/* Alias + Type of Member */}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Alias (Passbook No.)">
+              <Field label="Alias (Passbook No.)" fieldKey="passbookNo" hasError={errorFields.has("passbookNo")}>
                 <form.Field name="passbookNo">
                   {(field) => (
                     <Input
@@ -311,7 +332,7 @@ function BasicInfoPage() {
                   )}
                 </form.Field>
               </Field>
-              <Field label="Type of Member">
+              <Field label="Type of Member" fieldKey="memberType" hasError={errorFields.has("memberType")}>
                 <form.Field name="memberType">
                   {(field) => (
                     <Select
@@ -328,8 +349,21 @@ function BasicInfoPage() {
               </Field>
             </div>
 
+            <Field label="Shareholder Number" fieldKey="shareholderNumber" hasError={errorFields.has("shareholderNumber")}>
+              <form.Field name="shareholderNumber">
+                {(field) => (
+                  <Input
+                    placeholder="Shareholder number"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                )}
+              </form.Field>
+            </Field>
+
             {/* Join Date */}
-            <Field label="Join Date">
+            <Field label="Join Date" fieldKey="joinDate" hasError={errorFields.has("joinDate")}>
               <form.Field name="joinDate">
                 {(field) => (
                   <Input
@@ -344,7 +378,7 @@ function BasicInfoPage() {
 
             {/* Gender + DOB */}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Gender">
+              <Field label="Gender" fieldKey="gender" hasError={errorFields.has("gender")}>
                 <form.Field name="gender">
                   {(field) => (
                     <Select
@@ -360,7 +394,7 @@ function BasicInfoPage() {
                   )}
                 </form.Field>
               </Field>
-              <Field label="Date of Birth">
+              <Field label="Date of Birth" fieldKey="dob" hasError={errorFields.has("dob")}>
                 <form.Field name="dob">
                   {(field) => (
                     <Input
@@ -376,7 +410,7 @@ function BasicInfoPage() {
 
             {/* Citizenship Number + Issued Date */}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Citizenship Number">
+              <Field label="Citizenship Number" fieldKey="citizenshipNumber" hasError={errorFields.has("citizenshipNumber")}>
                 <form.Field name="citizenshipNumber">
                   {(field) => (
                     <Input
@@ -388,7 +422,7 @@ function BasicInfoPage() {
                   )}
                 </form.Field>
               </Field>
-              <Field label="Citizenship Issued Date">
+              <Field label="Citizenship Issued Date" fieldKey="citizenshipIssuedDate" hasError={errorFields.has("citizenshipIssuedDate")}>
                 <form.Field name="citizenshipIssuedDate">
                   {(field) => (
                     <Input
@@ -403,7 +437,7 @@ function BasicInfoPage() {
             </div>
 
             {/* Citizenship Issued District */}
-            <Field label="Citizenship Issued District">
+            <Field label="Citizenship Issued District" fieldKey="citizenshipIssuedDistrict" hasError={errorFields.has("citizenshipIssuedDistrict")}>
               <form.Field name="citizenshipIssuedDistrict">
                 {(field) => (
                   <Input
@@ -418,7 +452,7 @@ function BasicInfoPage() {
 
             {/* NIN Number + NIN Issued Date */}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="NIN Number">
+              <Field label="NIN Number" fieldKey="ninIdNumber" hasError={errorFields.has("ninIdNumber")}>
                 <form.Field name="ninIdNumber">
                   {(field) => (
                     <Input
@@ -430,7 +464,7 @@ function BasicInfoPage() {
                   )}
                 </form.Field>
               </Field>
-              <Field label="NIN Issued Date">
+              <Field label="NIN Issued Date" fieldKey="ninIssuedDate" hasError={errorFields.has("ninIssuedDate")}>
                 <form.Field name="ninIssuedDate">
                   {(field) => (
                     <Input
@@ -445,7 +479,7 @@ function BasicInfoPage() {
             </div>
 
             {/* NIN Issued District */}
-            <Field label="NIN Issued District">
+            <Field label="NIN Issued District" fieldKey="ninIssuedDistrict" hasError={errorFields.has("ninIssuedDistrict")}>
               <form.Field name="ninIssuedDistrict">
                 {(field) => (
                   <Input
@@ -460,7 +494,7 @@ function BasicInfoPage() {
 
             {/* Monthly Income + Nationality */}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Monthly Income (NPR)">
+              <Field label="Monthly Income (NPR)" fieldKey="monthlyIncome" hasError={errorFields.has("monthlyIncome")}>
                 <form.Field name="monthlyIncome">
                   {(field) => (
                     <Input
@@ -473,7 +507,7 @@ function BasicInfoPage() {
                   )}
                 </form.Field>
               </Field>
-              <Field label="Nationality">
+              <Field label="Nationality" fieldKey="nationality" hasError={errorFields.has("nationality")}>
                 <form.Field name="nationality">
                   {(field) => (
                     <Input
@@ -489,7 +523,7 @@ function BasicInfoPage() {
 
             {/* Province + District */}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Province">
+              <Field label="Province" fieldKey="provinceId" hasError={errorFields.has("provinceId")}>
                 <form.Field name="provinceId">
                   {(field) => (
                     <Select
@@ -514,7 +548,7 @@ function BasicInfoPage() {
                   )}
                 </form.Field>
               </Field>
-              <Field label="District">
+              <Field label="District" fieldKey="districtId" hasError={errorFields.has("districtId")}>
                 <form.Field name="districtId">
                   {(field) => (
                     <Select
@@ -541,7 +575,7 @@ function BasicInfoPage() {
             </div>
 
             {/* Municipality */}
-            <Field label="Municipality / Rural Municipality">
+            <Field label="Municipality / Rural Municipality" fieldKey="municipalityId" hasError={errorFields.has("municipalityId")}>
               <form.Field name="municipalityId">
                 {(field) => (
                   <Select
@@ -563,7 +597,7 @@ function BasicInfoPage() {
 
             {/* Ward Number + Street/Tole */}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Ward Number">
+              <Field label="Ward Number" fieldKey="wardNumber" hasError={errorFields.has("wardNumber")}>
                 <form.Field name="wardNumber">
                   {(field) => (
                     <Input
@@ -578,7 +612,7 @@ function BasicInfoPage() {
                   )}
                 </form.Field>
               </Field>
-              <Field label="Street / Tole">
+              <Field label="Street / Tole" fieldKey="tole" hasError={errorFields.has("tole")}>
                 <form.Field name="tole">
                   {(field) => (
                     <Input
@@ -594,7 +628,7 @@ function BasicInfoPage() {
 
             {/* Religion + Occupation */}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Religion">
+              <Field label="Religion" fieldKey="religion" hasError={errorFields.has("religion")}>
                 <form.Field name="religion">
                   {(field) => (
                     <Select
@@ -618,7 +652,7 @@ function BasicInfoPage() {
                   )}
                 </form.Field>
               </Field>
-              <Field label="Occupation">
+              <Field label="Occupation" fieldKey="occupation" hasError={errorFields.has("occupation")}>
                 <form.Field name="occupation">
                   {(field) => (
                     <Input
@@ -633,7 +667,7 @@ function BasicInfoPage() {
             </div>
 
             {/* Education */}
-            <Field label="Education">
+            <Field label="Education" fieldKey="education" hasError={errorFields.has("education")}>
               <form.Field name="education">
                 {(field) => (
                   <Select
@@ -665,7 +699,7 @@ function BasicInfoPage() {
 
             {/* Contact + Mobile */}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Contact Number">
+              <Field label="Contact Number" fieldKey="contactNumber" hasError={errorFields.has("contactNumber")}>
                 <form.Field name="contactNumber">
                   {(field) => (
                     <Input
@@ -678,7 +712,7 @@ function BasicInfoPage() {
                   )}
                 </form.Field>
               </Field>
-              <Field label="Mobile Number">
+              <Field label="Mobile Number" fieldKey="mobileNumber" hasError={errorFields.has("mobileNumber")}>
                 <form.Field name="mobileNumber">
                   {(field) => (
                     <Input

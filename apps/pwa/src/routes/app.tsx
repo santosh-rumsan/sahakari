@@ -26,7 +26,6 @@ const notifApi = createNotificationApi(apiUrl);
 
 export const Route = createFileRoute("/app")({
   beforeLoad: () => {
-    if (typeof window === "undefined") return;
     const token = getStorageItem("token");
     if (!token) throw redirect({ to: "/login" });
   },

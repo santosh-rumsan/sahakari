@@ -4,13 +4,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { CheckCircle2, ChevronLeft, ChevronRight, Upload } from "lucide-react";
 
-import { createGeoApi, createLoanApi } from "@rs/sdk";
+import { createGeoApi, createKycApi, createLoanApi, createUploadApi } from "@rs/sdk";
 
 import { getToken } from "../../../lib/storage";
 
 const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
 const loanApi = createLoanApi(apiUrl);
 const geoApi = createGeoApi(apiUrl);
+const kycApi = createKycApi(apiUrl);
+const uploadApi = createUploadApi(apiUrl);
+const LOAN_ELIGIBLE_KYC_STATUSES = ["PENDING", "UNDER_REVIEW", "APPROVED"] as const;
 const STEPS = [
   "Personal Info",
   "Loan Details",
@@ -60,14 +63,20 @@ function NewLoanPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
+  const { data: kyc, isLoading: isKycLoading, error: kycError } = useQuery({
+    queryKey: ["kyc"],
+    queryFn: () => kycApi.getMine(token),
+  });
+  const loanEligible = !!kyc?.status && LOAN_ELIGIBLE_KYC_STATUSES.includes(kyc.status as (typeof LOAN_ELIGIBLE_KYC_STATUSES)[number]);
 
-  const { data: loan } = useQuery({
+  const { data: loan, isLoading: isLoanLoading, error: loanError } = useQuery({
     queryKey: ["current-loan"],
     queryFn: async () => {
       const existing = await loanApi.listMine(token);
       if (existing.length > 0 && existing[0].status === "DRAFT") return existing[0];
       return loanApi.create(token);
     },
+    enabled: loanEligible,
   });
 
   const saveMutation = useMutation({
@@ -103,7 +112,48 @@ function NewLoanPage() {
     enabled: !!loan?.districtId,
   });
 
-  if (!loan) {
+  if (isKycLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface">
+        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  if (kycError) {
+    return (
+      <RouteMessage
+        title="Unable to load KYC"
+        message={kycError instanceof Error ? kycError.message : "Please try again."}
+        actionLabel="Back to Loans"
+        actionTo="/app/loans"
+      />
+    );
+  }
+
+  if (!loanEligible) {
+    return (
+      <RouteMessage
+        title="Submit KYC First"
+        message="You can apply for a loan after your KYC has been submitted. Approval is not required."
+        actionLabel="Go to KYC"
+        actionTo="/app/kyc"
+      />
+    );
+  }
+
+  if (loanError) {
+    return (
+      <RouteMessage
+        title="Unable to load loan application"
+        message={loanError instanceof Error ? loanError.message : "Please try again."}
+        actionLabel="Back to Loans"
+        actionTo="/app/loans"
+      />
+    );
+  }
+
+  if (isLoanLoading || !loan) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-surface">
         <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -160,9 +210,9 @@ function NewLoanPage() {
         {step === 3 && (
           <LoanAddress
             loan={loan}
-            provinces={provinces}
-            districts={districts}
-            municipalities={municipalities}
+            provinces={provinces ?? []}
+            districts={districts ?? []}
+            municipalities={municipalities ?? []}
             onSave={(d) => handleSave("address", d)}
             onNext={() => setStep(4)}
             onBack={() => setStep(2)}
@@ -433,10 +483,22 @@ function Documents({ loan, onSave, onSubmit, onBack, isSubmitting }: { loan: any
     ninIdCardUrl: loan?.ninIdCardUrl ?? "",
     propertyDocumentUrl: loan?.propertyDocumentUrl ?? "",
   });
+  const [uploadingField, setUploadingField] = useState<string | null>(null);
+  const token = getToken();
 
   const handleFileChange = (field: string, url: string) => {
     setDocs((prev) => ({ ...prev, [field]: url }));
     onSave({ [field]: url });
+  };
+
+  const handleUpload = async (field: string, file: File) => {
+    setUploadingField(field);
+    try {
+      const { url } = await uploadApi.upload(token, file);
+      handleFileChange(field, url);
+    } finally {
+      setUploadingField(null);
+    }
   };
 
   const requiredUploaded =
@@ -446,12 +508,12 @@ function Documents({ loan, onSave, onSubmit, onBack, isSubmitting }: { loan: any
     <div className="space-y-4">
       <p className="text-sm font-semibold text-on-surface font-headline">Upload Required Documents</p>
       {[
-        ["passportPhotoUrl", "Passport Photo *"],
-        ["citizenshipFrontUrl", "Citizenship (Front) *"],
-        ["citizenshipBackUrl", "Citizenship (Back) *"],
-        ["ninIdCardUrl", "NIN ID Card *"],
-        ["propertyDocumentUrl", "Property Document (if collateral)"],
-      ].map(([field, label]) => (
+        ["passportPhotoUrl", "Passport Photo *", "image/*"],
+        ["citizenshipFrontUrl", "Citizenship (Front) *", "image/*,application/pdf"],
+        ["citizenshipBackUrl", "Citizenship (Back) *", "image/*,application/pdf"],
+        ["ninIdCardUrl", "NIN ID Card *", "image/*,application/pdf"],
+        ["propertyDocumentUrl", "Property Document (if collateral)", "image/*,application/pdf"],
+      ].map(([field, label, accept]) => (
         <div key={field} className="rounded-xl bg-surface-container-lowest p-4 shadow-sm">
           <p className="mb-3 text-sm font-medium text-on-surface-variant">{label}</p>
           {docs[field as keyof typeof docs] ? (
@@ -471,17 +533,21 @@ function Documents({ loan, onSave, onSubmit, onBack, isSubmitting }: { loan: any
           ) : (
             <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl bg-surface-container-low py-7 text-on-surface-variant hover:bg-surface-container transition">
               <Upload size={20} />
-              <span className="text-sm font-medium">Tap to upload</span>
+              <span className="text-sm font-medium">
+                {uploadingField === field ? "Uploading..." : "Tap to upload"}
+              </span>
+              <span className="text-xs text-on-surface-variant/80">
+                {accept.includes("application/pdf") ? "Images or PDF" : "Images only"}
+              </span>
               <input
                 type="file"
-                accept="image/*"
+                accept={accept}
                 className="sr-only"
+                disabled={uploadingField === field}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    const reader = new FileReader();
-                    reader.onload = () => handleFileChange(field, reader.result as string);
-                    reader.readAsDataURL(file);
+                    void handleUpload(field, file);
                   }
                 }}
               />
@@ -505,6 +571,41 @@ function Documents({ loan, onSave, onSubmit, onBack, isSubmitting }: { loan: any
         >
           {isSubmitting ? "Submitting..." : "Submit Application"}
         </button>
+      </div>
+    </div>
+  );
+}
+
+function RouteMessage({
+  title,
+  message,
+  actionLabel,
+  actionTo,
+}: {
+  title: string;
+  message: string;
+  actionLabel: string;
+  actionTo: "/app/kyc" | "/app/loans";
+}) {
+  return (
+    <div className="min-h-screen bg-surface pb-32">
+      <header className="sticky top-0 z-10 flex items-center gap-3 px-6 h-14 bg-surface/80 backdrop-blur-xl">
+        <Link to="/app/loans" className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-container-low text-on-surface-variant hover:bg-surface-container transition">
+          <ChevronLeft size={18} />
+        </Link>
+        <h1 className="font-headline text-base font-semibold text-on-surface">Loan Application</h1>
+      </header>
+      <div className="px-6 pt-8">
+        <div className="rounded-2xl bg-surface-container-lowest p-6 shadow-sm">
+          <h2 className="font-headline text-lg font-semibold text-on-surface">{title}</h2>
+          <p className="mt-2 text-sm text-on-surface-variant">{message}</p>
+          <Link
+            to={actionTo}
+            className="mt-5 inline-block rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition hover:bg-primary-dim active:scale-95"
+          >
+            {actionLabel}
+          </Link>
+        </div>
       </div>
     </div>
   );

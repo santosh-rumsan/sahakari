@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -5,6 +6,7 @@ import { Upload } from "lucide-react";
 
 import { createKycApi, createUploadApi } from "@rs/sdk";
 
+import { getKycSubmitErrorsForRoute } from "../../../lib/kyc-submit-errors";
 import { getToken } from "../../../lib/storage";
 
 const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
@@ -18,13 +20,20 @@ export const Route = createFileRoute("/app/kyc/mandatory")({
 function Field({
   label,
   children,
+  fieldKey,
+  hasError = false,
 }: {
   label: string;
   children: React.ReactNode;
+  fieldKey?: string;
+  hasError?: boolean;
 }) {
   return (
-    <div>
-      <label className="mb-1 block text-sm font-semibold text-gray-800">
+    <div
+      id={fieldKey ? `kyc-field-${fieldKey}` : undefined}
+      className={hasError ? "rounded-2xl border border-red-300 bg-red-50 p-3" : ""}
+    >
+      <label className={`mb-1 block text-sm font-semibold ${hasError ? "text-red-700" : "text-gray-800"}`}>
         {label}
       </label>
       {children}
@@ -68,6 +77,8 @@ function MandatoryPage() {
       navigate({ to: "/app/kyc/nominee" });
     },
   });
+  const routeErrors = getKycSubmitErrorsForRoute("/app/kyc/mandatory");
+  const errorFields = new Set(routeErrors.map((error) => error.field));
 
   const form = useForm({
     defaultValues: {
@@ -102,6 +113,12 @@ function MandatoryPage() {
       </div>
     );
   }
+
+  useEffect(() => {
+    if (routeErrors.length === 0) return;
+    const element = document.getElementById(`kyc-field-${routeErrors[0].field}`);
+    element?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [routeErrors]);
 
   const handleUpload = async (
     field: "mandatorySignatureUrl" | "mandatoryPassportPhotoUrl",
@@ -155,12 +172,17 @@ function MandatoryPage() {
 
       {/* Form */}
       <div className="space-y-5 p-5">
+        {routeErrors.length > 0 && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            Complete the highlighted required fields first.
+          </div>
+        )}
         <div className="rounded-2xl bg-white p-5 shadow-sm">
           <h2 className="mb-5 text-lg font-bold text-gray-900">
             Mandatory Nominee Information
           </h2>
           <div className="space-y-4">
-            <Field label="Name">
+            <Field label="Name" fieldKey="mandatoryName" hasError={errorFields.has("mandatoryName")}>
               <form.Field name="mandatoryName">
                 {(field) => (
                   <Input
@@ -173,7 +195,7 @@ function MandatoryPage() {
               </form.Field>
             </Field>
 
-            <Field label="Date of Birth">
+            <Field label="Date of Birth" fieldKey="mandatoryDob" hasError={errorFields.has("mandatoryDob")}>
               <form.Field name="mandatoryDob">
                 {(field) => (
                   <Input
@@ -186,7 +208,7 @@ function MandatoryPage() {
               </form.Field>
             </Field>
 
-            <Field label="Relation">
+            <Field label="Relation" fieldKey="mandatoryRelation" hasError={errorFields.has("mandatoryRelation")}>
               <form.Field name="mandatoryRelation">
                 {(field) => (
                   <Input
@@ -199,7 +221,7 @@ function MandatoryPage() {
               </form.Field>
             </Field>
 
-            <Field label="Address">
+            <Field label="Address" fieldKey="mandatoryAddress" hasError={errorFields.has("mandatoryAddress")}>
               <form.Field name="mandatoryAddress">
                 {(field) => (
                   <Input
@@ -212,7 +234,7 @@ function MandatoryPage() {
               </form.Field>
             </Field>
 
-            <Field label="Contact Number">
+            <Field label="Contact Number" fieldKey="mandatoryContactNumber" hasError={errorFields.has("mandatoryContactNumber")}>
               <form.Field name="mandatoryContactNumber">
                 {(field) => (
                   <Input
@@ -227,7 +249,7 @@ function MandatoryPage() {
             </Field>
 
             {/* Signature upload */}
-            <Field label="Signature (600x600 px)">
+            <Field label="Signature (600x600 px)" fieldKey="mandatorySignatureUrl" hasError={errorFields.has("mandatorySignatureUrl")}>
               <div className="space-y-2">
                 <form.Subscribe
                   selector={(state) => state.values.mandatorySignatureUrl}
@@ -254,6 +276,41 @@ function MandatoryPage() {
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) handleUpload("mandatorySignatureUrl", file);
+                    }}
+                  />
+                </label>
+              </div>
+            </Field>
+
+            <Field
+              label="Passport Photo"
+              fieldKey="mandatoryPassportPhotoUrl"
+              hasError={errorFields.has("mandatoryPassportPhotoUrl")}
+            >
+              <div className="space-y-2">
+                <form.Subscribe selector={(state) => state.values.mandatoryPassportPhotoUrl}>
+                  {(url) =>
+                    url && (
+                      <img
+                        src={url}
+                        alt="Passport Photo"
+                        className="h-24 w-20 rounded border object-cover"
+                      />
+                    )
+                  }
+                </form.Subscribe>
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-300 py-8 text-sm text-gray-500 hover:bg-gray-50">
+                  <div className="text-center">
+                    <Upload size={24} className="mx-auto mb-1 text-gray-400" />
+                    <span>Tap to upload passport photo</span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleUpload("mandatoryPassportPhotoUrl", file);
                     }}
                   />
                 </label>

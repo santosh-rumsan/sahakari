@@ -21,6 +21,7 @@ function KycDetailPage() {
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
   const [activeTab, setActiveTab] = useState(0)
+  const [reviewError, setReviewError] = useState<string | null>(null)
 
   const { data: kyc, isLoading } = useQuery({
     queryKey: ['admin-kyc', id],
@@ -47,12 +48,18 @@ function KycDetailPage() {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
       })
-      if (!res.ok) throw new Error('Failed to review')
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body?.message ?? `Request failed (${res.status})`)
+      }
       return res.json()
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-kyc'] })
       navigate({ to: '/kyc' })
+    },
+    onError: (err: Error) => {
+      setReviewError(err.message ?? 'Failed to update status')
     },
   })
 
@@ -137,22 +144,23 @@ function KycDetailPage() {
         {activeTab === 0 && (
           <div className="grid grid-cols-2 gap-4">
             {[
-              ['First Name', kyc.firstName],
-              ['Middle Name', kyc.middleName],
-              ['Last Name', kyc.lastName],
-              ['Date of Birth', kyc.dateOfBirth],
+              ['Full Name (EN)', kyc.fullNameEn],
+              ['Full Name (NP)', kyc.fullNameNp],
+              ['Passbook No.', kyc.passbookNo],
+              ['Member Type', kyc.memberType],
+              ['Date of Birth', kyc.dob ? new Date(kyc.dob).toLocaleDateString() : null],
               ['Gender', kyc.gender],
-              ['Marital Status', kyc.maritalStatus],
-              ['Grandfather Name', kyc.grandfatherName],
-              ['Father Name', kyc.fatherName],
-              ['Mother Name', kyc.motherName],
-              ['Spouse Name', kyc.spouseName],
-              ['Province', kyc.province],
-              ['District', kyc.district],
-              ['Municipality', kyc.municipality],
-              ['Ward No.', kyc.wardNo],
+              ['Nationality', kyc.nationality],
+              ['Religion', kyc.religion],
+              ['Occupation', kyc.occupation],
+              ['Education', kyc.education],
+              ['District', kyc.district?.name],
+              ['Municipality', kyc.municipality?.name],
+              ['Ward No.', kyc.wardNumber],
               ['Tole', kyc.tole],
-              ['Caste', kyc.caste],
+              ['Contact Number', kyc.contactNumber],
+              ['Mobile Number', kyc.mobileNumber],
+              ['Email', kyc.email],
             ].map(([label, value]) =>
               value ? (
                 <div key={label}>
@@ -171,10 +179,13 @@ function KycDetailPage() {
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  ['Citizenship No.', kyc.citizenshipNo],
-                  ['Citizenship Issue District', kyc.citizenshipIssueDistrict],
-                  ['Citizenship Issue Date', kyc.citizenshipIssueDate],
-                  ['PAN No.', kyc.panNo],
+                  ['Citizenship No.', kyc.citizenshipNumber],
+                  ['Citizenship Issue District', kyc.citizenshipIssuedDistrict],
+                  ['Citizenship Issue Date', kyc.citizenshipIssuedDate ? new Date(kyc.citizenshipIssuedDate).toLocaleDateString() : null],
+                  ['NIN ID Number', kyc.ninIdNumber],
+                  ['NIN Issue District', kyc.ninIssuedDistrict],
+                  ['NIN Issue Date', kyc.ninIssuedDate ? new Date(kyc.ninIssuedDate).toLocaleDateString() : null],
+                  ['Monthly Income', kyc.monthlyIncome],
                 ].map(([label, value]) =>
                   value ? (
                     <div key={label}>
@@ -195,8 +206,9 @@ function KycDetailPage() {
                 {[
                   ['Nominee Name', kyc.nomineeName],
                   ['Nominee Relation', kyc.nomineeRelation],
-                  ['Nominee Phone', kyc.nomineePhone],
+                  ['Nominee Phone', kyc.nomineeContactNumber],
                   ['Nominee Address', kyc.nomineeAddress],
+                  ['Nominee DOB', kyc.nomineeDob ? new Date(kyc.nomineeDob).toLocaleDateString() : null],
                 ].map(([label, value]) =>
                   value ? (
                     <div key={label}>
@@ -213,45 +225,58 @@ function KycDetailPage() {
         )}
         {activeTab === 2 && (
           <div className="space-y-4">
-            {kyc.signatureUrl && (
+            {kyc.digitalSignatureUrl && (
               <div>
                 <span className="text-xs text-gray-400 block mb-2">
-                  Signature Image
+                  Digital Signature
                 </span>
                 <img
-                  src={kyc.signatureUrl}
+                  src={kyc.digitalSignatureUrl}
                   alt="Signature"
                   className="h-20 border rounded"
                 />
               </div>
             )}
-            {kyc.citizenshipFrontUrl && (
+            {kyc.passportPhotoUrl && (
               <div>
                 <span className="text-xs text-gray-400 block mb-2">
-                  Citizenship Front
+                  Passport Photo
                 </span>
                 <img
-                  src={kyc.citizenshipFrontUrl}
-                  alt="Citizenship Front"
+                  src={kyc.passportPhotoUrl}
+                  alt="Passport Photo"
                   className="h-40 border rounded"
                 />
               </div>
             )}
-            {kyc.citizenshipBackUrl && (
+            {kyc.rightThumbUrl && (
               <div>
                 <span className="text-xs text-gray-400 block mb-2">
-                  Citizenship Back
+                  Right Thumb
                 </span>
                 <img
-                  src={kyc.citizenshipBackUrl}
-                  alt="Citizenship Back"
-                  className="h-40 border rounded"
+                  src={kyc.rightThumbUrl}
+                  alt="Right Thumb"
+                  className="h-20 border rounded"
                 />
               </div>
             )}
-            {!kyc.signatureUrl &&
-              !kyc.citizenshipFrontUrl &&
-              !kyc.citizenshipBackUrl && (
+            {kyc.leftThumbUrl && (
+              <div>
+                <span className="text-xs text-gray-400 block mb-2">
+                  Left Thumb
+                </span>
+                <img
+                  src={kyc.leftThumbUrl}
+                  alt="Left Thumb"
+                  className="h-20 border rounded"
+                />
+              </div>
+            )}
+            {!kyc.digitalSignatureUrl &&
+              !kyc.passportPhotoUrl &&
+              !kyc.rightThumbUrl &&
+              !kyc.leftThumbUrl && (
                 <p className="text-sm text-gray-400">
                   No signature or document images uploaded.
                 </p>
@@ -268,17 +293,29 @@ function KycDetailPage() {
         </div>
       )}
 
+      {reviewError && (
+        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 flex items-center justify-between">
+          <p className="text-sm text-red-700">{reviewError}</p>
+          <button
+            onClick={() => setReviewError(null)}
+            className="text-red-400 hover:text-red-600 text-xs ml-4"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {kyc.status === 'PENDING' || kyc.status === 'UNDER_REVIEW' ? (
         <div className="flex gap-3">
           <button
-            onClick={() => reviewMutation.mutate({ action: 'APPROVED' })}
+            onClick={() => { setReviewError(null); reviewMutation.mutate({ action: 'APPROVED' }) }}
             disabled={reviewMutation.isPending}
             className="flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
           >
             <CheckCircle2 size={16} /> Approve
           </button>
           <button
-            onClick={() => setShowRejectModal(true)}
+            onClick={() => { setReviewError(null); setShowRejectModal(true) }}
             disabled={reviewMutation.isPending}
             className="flex items-center gap-2 rounded-lg bg-red-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
           >

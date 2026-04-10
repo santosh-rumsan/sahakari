@@ -28,7 +28,13 @@ const fetch_ = async (input: RequestInfo, init?: RequestInit) => {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(err.message ?? "Request failed");
+    const error = new Error(err.message ?? "Request failed") as Error & {
+      details?: unknown;
+    };
+    if (err.errors !== undefined) {
+      error.details = err.errors;
+    }
+    throw error;
   }
   return res.json();
 };

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, Outlet, useMatches } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Eye, ChevronLeft, FileText } from 'lucide-react'
@@ -14,6 +14,9 @@ function getToken() {
 }
 
 function KycPage() {
+  const matches = useMatches()
+  const isChildActive = matches[matches.length - 1]?.routeId !== '/_app/kyc'
+
   const token = getToken()
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [page, setPage] = useState(1)
@@ -28,8 +31,10 @@ function KycPage() {
       })
       return res.json()
     },
-    enabled: !!token,
+    enabled: !!token && !isChildActive,
   })
+
+  if (isChildActive) return <Outlet />
 
   const kycList = data?.data ?? []
 

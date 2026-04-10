@@ -1,4 +1,11 @@
-import { Controller, Post, UseGuards, Request, Body } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Post,
+  UseGuards,
+  Request,
+  Body,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { UploadService } from './upload.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -11,6 +18,23 @@ export class UploadController {
 
   @Post()
   async upload(@Request() req: any, @Body() body: { file: string }) {
+    const contentType = req.headers['content-type'] ?? '';
+
+    if (typeof contentType === 'string' && contentType.includes('multipart/form-data')) {
+      const uploadedFile = await req.file();
+      if (!uploadedFile) throw new BadRequestException('File is required');
+
+      const buffer = await uploadedFile.toBuffer();
+      const url = await this.uploadService.uploadBuffer(
+        buffer,
+        uploadedFile.mimetype,
+        uploadedFile.filename,
+      );
+      return { url };
+    }
+
+    if (!body?.file) throw new BadRequestException('File is required');
+
     const url = await this.uploadService.upload(body.file);
     return { url };
   }

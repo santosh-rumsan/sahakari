@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 
 import { createLoanApi } from "@rs/sdk";
 
@@ -8,8 +8,18 @@ import { getToken } from "../../lib/storage";
 const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
 
 export const Route = createFileRoute("/app/loans")({
-  component: LoansPage,
+  component: LoansRouteWrapper,
 });
+
+function LoansRouteWrapper() {
+  const { location } = useRouterState();
+
+  if (location.pathname !== "/app/loans") {
+    return <Outlet />;
+  }
+
+  return <LoansPage />;
+}
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { className: string; label: string }> = {
@@ -90,7 +100,8 @@ function LoansPage() {
             {loans.map((loan) => (
               <Link
                 key={loan.id}
-                to={`/app/loans/${loan.id}`}
+                to="/app/loans/$id"
+                params={{ id: loan.id }}
                 className="block rounded-xl bg-surface-container-lowest p-5 shadow-sm transition hover:bg-surface-container-low active:scale-[0.98]"
               >
                 <div className="flex items-start justify-between gap-3">

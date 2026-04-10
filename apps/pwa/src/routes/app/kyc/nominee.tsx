@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -5,6 +6,7 @@ import { Upload } from "lucide-react";
 
 import { createKycApi, createUploadApi } from "@rs/sdk";
 
+import { getKycSubmitErrorsForRoute } from "../../../lib/kyc-submit-errors";
 import { getToken } from "../../../lib/storage";
 
 const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
@@ -18,13 +20,20 @@ export const Route = createFileRoute("/app/kyc/nominee")({
 function Field({
   label,
   children,
+  fieldKey,
+  hasError = false,
 }: {
   label: string;
   children: React.ReactNode;
+  fieldKey?: string;
+  hasError?: boolean;
 }) {
   return (
-    <div>
-      <label className="mb-1 block text-sm font-semibold text-gray-800">
+    <div
+      id={fieldKey ? `kyc-field-${fieldKey}` : undefined}
+      className={hasError ? "rounded-2xl border border-red-300 bg-red-50 p-3" : ""}
+    >
+      <label className={`mb-1 block text-sm font-semibold ${hasError ? "text-red-700" : "text-gray-800"}`}>
         {label}
       </label>
       {children}
@@ -68,6 +77,8 @@ function NomineePage() {
       navigate({ to: "/app/kyc/signature" });
     },
   });
+  const routeErrors = getKycSubmitErrorsForRoute("/app/kyc/nominee");
+  const errorFields = new Set(routeErrors.map((error) => error.field));
 
   const form = useForm({
     defaultValues: {
@@ -102,6 +113,12 @@ function NomineePage() {
       </div>
     );
   }
+
+  useEffect(() => {
+    if (routeErrors.length === 0) return;
+    const element = document.getElementById(`kyc-field-${routeErrors[0].field}`);
+    element?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [routeErrors]);
 
   const handleUpload = async (
     field: "nomineeSignatureUrl" | "nomineePassportPhotoUrl",
@@ -155,12 +172,17 @@ function NomineePage() {
 
       {/* Form */}
       <div className="space-y-5 p-5">
+        {routeErrors.length > 0 && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            Complete the highlighted required fields first.
+          </div>
+        )}
         <div className="rounded-2xl bg-white p-5 shadow-sm">
           <h2 className="mb-5 text-lg font-bold text-gray-900">
             Nominee Information
           </h2>
           <div className="space-y-4">
-            <Field label="Name">
+            <Field label="Name" fieldKey="nomineeName" hasError={errorFields.has("nomineeName")}>
               <form.Field name="nomineeName">
                 {(field) => (
                   <Input
@@ -173,7 +195,7 @@ function NomineePage() {
               </form.Field>
             </Field>
 
-            <Field label="Date of Birth">
+            <Field label="Date of Birth" fieldKey="nomineeDob" hasError={errorFields.has("nomineeDob")}>
               <form.Field name="nomineeDob">
                 {(field) => (
                   <Input
@@ -186,7 +208,7 @@ function NomineePage() {
               </form.Field>
             </Field>
 
-            <Field label="Relation">
+            <Field label="Relation" fieldKey="nomineeRelation" hasError={errorFields.has("nomineeRelation")}>
               <form.Field name="nomineeRelation">
                 {(field) => (
                   <Input
@@ -199,7 +221,7 @@ function NomineePage() {
               </form.Field>
             </Field>
 
-            <Field label="Address">
+            <Field label="Address" fieldKey="nomineeAddress" hasError={errorFields.has("nomineeAddress")}>
               <form.Field name="nomineeAddress">
                 {(field) => (
                   <Input
@@ -212,7 +234,7 @@ function NomineePage() {
               </form.Field>
             </Field>
 
-            <Field label="Contact Number">
+            <Field label="Contact Number" fieldKey="nomineeContactNumber" hasError={errorFields.has("nomineeContactNumber")}>
               <form.Field name="nomineeContactNumber">
                 {(field) => (
                   <Input
@@ -227,7 +249,7 @@ function NomineePage() {
             </Field>
 
             {/* Signature upload */}
-            <Field label="Nominee's Signature">
+            <Field label="Nominee's Signature" fieldKey="nomineeSignatureUrl" hasError={errorFields.has("nomineeSignatureUrl")}>
               <div className="space-y-2">
                 <form.Subscribe
                   selector={(state) => state.values.nomineeSignatureUrl}
@@ -261,7 +283,7 @@ function NomineePage() {
             </Field>
 
             {/* Passport photo upload */}
-            <Field label="Nominee's Passport Photo">
+            <Field label="Nominee's Passport Photo" fieldKey="nomineePassportPhotoUrl" hasError={errorFields.has("nomineePassportPhotoUrl")}>
               <div className="space-y-2">
                 <form.Subscribe
                   selector={(state) => state.values.nomineePassportPhotoUrl}

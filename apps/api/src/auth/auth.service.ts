@@ -7,13 +7,20 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
-import { randomBytes } from 'crypto';
 import {
   RegisterDto,
   LoginDto,
   AdminSendOtpDto,
   AdminVerifyOtpDto,
 } from './dto/auth.dto';
+
+export interface MailApiPayload {
+  to?: string;
+  subject: string;
+  email: string;
+  message?: string;
+  html: string;
+}
 
 @Injectable()
 export class AuthService {
@@ -77,7 +84,7 @@ export class AuthService {
     });
     if (!admin) throw new BadRequestException('Admin not found');
 
-    const otp = randomBytes(3).toString('hex').toUpperCase();
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await this.prisma.adminOtp.create({
@@ -125,8 +132,8 @@ export class AuthService {
   }
 
   private async sendOtpEmail(email: string, name: string, otp: string) {
-    const serviceUrl = process.env.EMAIL_OTP_SERVICE_URL;
-    const apiKey = process.env.EMAIL_OTP_SERVICE_API_KEY;
+    const serviceUrl = process.env.EMAIL_SERVICE_URL;
+    const apiKey = process.env.EMAIL_SERVICE_API_KEY;
     if (!serviceUrl) return;
 
     try {
@@ -138,9 +145,10 @@ export class AuthService {
         },
         body: JSON.stringify({
           to: email,
+          email,
           subject: `Your OTP for Sahakari Admin: ${otp}`,
           html: `<p>Hi ${name},</p><p>Your OTP is: <strong>${otp}</strong></p><p>Valid for 10 minutes.</p>`,
-        }),
+        } satisfies MailApiPayload),
       });
     } catch (err) {
       console.error('Failed to send OTP email:', err);

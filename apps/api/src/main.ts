@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -6,6 +6,8 @@ import {
   FastifyAdapter,
   type NestFastifyApplication,
 } from '@nestjs/platform-fastify';
+import multipart from '@fastify/multipart';
+import staticFiles from '@fastify/static';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { WinstonModule } from 'nest-winston';
 import { format, transports } from 'winston';
@@ -88,6 +90,22 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
+  const maxUploadBytes = parseInt(process.env.MAX_UPLOAD_SIZE_BYTES ?? String(1 * 1024 * 1024), 10);
+  await app.register(multipart, {
+    limits: {
+      fileSize: maxUploadBytes,
+    },
+  });
+
+  const localUploadPath = process.env.UPLOAD_LOCAL_PATH;
+  if (localUploadPath) {
+    mkdirSync(localUploadPath, { recursive: true });
+    await app.register(staticFiles, {
+      root: localUploadPath,
+      prefix: `/${globalPrefix}/uploads/`,
+    });
+  }
+
   app.setGlobalPrefix(globalPrefix);
 
   const swaggerConfig = new DocumentBuilder()
