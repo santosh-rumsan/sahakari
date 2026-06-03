@@ -1,12 +1,12 @@
-import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
+import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import {
-  Users,
-  FileText,
-  CreditCard,
-  LayoutDashboard,
   Building2,
+  CreditCard,
+  FileText,
+  LayoutDashboard,
+  Users,
 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { AppShell, ExpandableSidebar } from '../components/layout'
 
 export const Route = createFileRoute('/_app')({

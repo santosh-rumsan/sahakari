@@ -1,15 +1,21 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { cn } from '@rs/ui'
-import type { UpdateContactInput, ContactTag, ContactStatus } from '@rs/sdk'
 import { useContact, useUpdateContact } from '../hooks/contacts'
+import type { ContactStatus, ContactTag, UpdateContactInput } from '@rs/sdk'
 
 export const Route = createFileRoute('/_app/contacts/$id/edit')({
   component: EditContact,
 })
 
-const TAGS: ContactTag[] = ['Client', 'Lead', 'Partner', 'Vendor', 'Archived']
-const STATUSES: ContactStatus[] = ['Active', 'Inactive']
+const TAGS: Array<ContactTag> = [
+  'Client',
+  'Lead',
+  'Partner',
+  'Vendor',
+  'Archived',
+]
+const STATUSES: Array<ContactStatus> = ['Active', 'Inactive']
 
 function EditContact() {
   const { id } = Route.useParams()
@@ -59,7 +65,10 @@ function EditContact() {
     return (
       <div className="flex h-full bg-[#f0f0f0] items-center justify-center flex-col gap-3">
         <p className="text-sm text-gray-500">Contact not found</p>
-        <Link to="/contacts" className="text-sm text-orange-500 hover:text-orange-600 font-medium">
+        <Link
+          to="/contacts"
+          className="text-sm text-orange-500 hover:text-orange-600 font-medium"
+        >
           Back to contacts
         </Link>
       </div>
@@ -81,7 +90,9 @@ function EditContact() {
             <span className="text-sm font-semibold text-[#1a1a1a]">Edit</span>
           </div>
 
-          <h1 className="text-3xl font-black text-[#1a1a1a] mb-8">Edit contact</h1>
+          <h1 className="text-3xl font-black text-[#1a1a1a] mb-8">
+            Edit contact
+          </h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-2 gap-6">
@@ -159,7 +170,9 @@ function EditContact() {
               <Field label="Status">
                 <select
                   value={form.status ?? 'Active'}
-                  onChange={(e) => set('status', e.target.value as ContactStatus)}
+                  onChange={(e) =>
+                    set('status', e.target.value as ContactStatus)
+                  }
                   className={inputCls}
                 >
                   {STATUSES.map((s) => (
@@ -183,7 +196,7 @@ function EditContact() {
 
             {updateMutation.error && (
               <p className="text-sm text-red-500">
-                {(updateMutation.error as Error).message}
+                {updateMutation.error.message}
               </p>
             )}
 
@@ -212,10 +225,18 @@ function EditContact() {
 const inputCls =
   'w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-white'
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</label>
+      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+        {label}
+      </label>
       {children}
     </div>
   )

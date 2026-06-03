@@ -1,7 +1,6 @@
 import {
   Controller,
   Get,
-  Post,
   Patch,
   Param,
   Query,
@@ -9,6 +8,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import type { AuthRequest } from '../auth/types';
 import { KycService } from './kyc.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -40,7 +40,7 @@ export class AdminKycController {
   @Patch(':id/review')
   review(
     @Param('id') id: string,
-    @Request() req: any,
+    @Request() req: AuthRequest,
     @Query('action') action: 'APPROVED' | 'REJECTED',
     @Query('reason') reason?: string,
   ) {

@@ -89,11 +89,10 @@ function DashboardPage() {
       : (user.cooperative?.name ?? "");
   const kycApproved = kyc?.status === "APPROVED";
 
-  // Check if there are any pending loans (not APPROVED)
+  // Consider a loan pending only if it's in submission/review states
+  const pendingStatuses = new Set(["SUBMITTED", "UNDER_REVIEW", "PENDING"]);
   const hasPendingLoans =
-    loans?.some(
-      (loan) => loan.status !== "APPROVED" && loan.status !== "REJECTED",
-    ) ?? false;
+    loans?.some((loan) => pendingStatuses.has(loan.status)) ?? false;
 
   const loanEligible = kycApproved && !hasPendingLoans;
   const unreadCount = notifications?.filter((n) => !n.isRead).length ?? 0;

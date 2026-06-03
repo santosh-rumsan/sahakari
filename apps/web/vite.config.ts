@@ -7,12 +7,15 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [
     viteTsConfigPaths({ projects: ['./tsconfig.json'] }),
-    TanStackRouterVite({ routesDirectory: './src/routes', generatedRouteTree: './src/routeTree.gen.ts' }),
+    TanStackRouterVite({
+      routesDirectory: './src/routes',
+      generatedRouteTree: './src/routeTree.gen.ts',
+    }),
     tailwindcss(),
     viteReact(),
   ],
   server: {
     host: '0.0.0.0',
-    allowedHosts: ['vibecoder','sahakari-admin.rumsan.xyz'],
+    allowedHosts: ['vibecoder', 'sahakari-admin.rumsan.xyz'],
   },
 })

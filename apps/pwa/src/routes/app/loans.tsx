@@ -34,6 +34,18 @@ function StatusBadge({ status }: { status: string }) {
       className: "bg-primary-container text-on-primary-container",
       label: "Approved",
     },
+    ACTIVE: {
+      className: "bg-green-100 text-green-700",
+      label: "Active",
+    },
+    COMPLETED: {
+      className: "bg-surface-container-high text-on-surface-variant",
+      label: "Completed",
+    },
+    OVERDUE: {
+      className: "bg-red-100 text-red-700",
+      label: "Overdue",
+    },
     REJECTED: {
       className: "bg-error-container text-on-error",
       label: "Rejected",
@@ -78,11 +90,15 @@ function LoansPage() {
 
   const kycApproved = kyc?.status === "APPROVED";
 
-  // Check if there are any pending loans (not APPROVED)
+  // Only loans still in application/review stages should block a new request.
+  const pendingStatuses = new Set([
+    "DRAFT",
+    "SUBMITTED",
+    "UNDER_REVIEW",
+    "PENDING",
+  ]);
   const hasPendingLoans =
-    loans?.some(
-      (loan) => loan.status !== "APPROVED" && loan.status !== "REJECTED",
-    ) ?? false;
+    loans?.some((loan) => pendingStatuses.has(loan.status)) ?? false;
 
   const canApplyForLoan = kycApproved && !hasPendingLoans;
 

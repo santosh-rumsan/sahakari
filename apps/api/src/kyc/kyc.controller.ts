@@ -5,11 +5,11 @@ import {
   Patch,
   Param,
   Body,
-  Query,
   UseGuards,
   Request,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import type { AuthRequest } from '../auth/types';
 import { KycService } from './kyc.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -21,14 +21,14 @@ export class KycController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   @ApiBearerAuth()
-  getMine(@Request() req: any) {
+  getMine(@Request() req: AuthRequest) {
     return this.kyc.getMine(req.user.sub);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post()
   @ApiBearerAuth()
-  create(@Request() req: any) {
+  create(@Request() req: AuthRequest) {
     return this.kyc.create(req.user.sub);
   }
 
@@ -37,8 +37,8 @@ export class KycController {
   @ApiBearerAuth()
   updateBasicInfo(
     @Param('id') id: string,
-    @Request() req: any,
-    @Body() body: any,
+    @Request() req: AuthRequest,
+    @Body() body: Record<string, unknown>,
   ) {
     return this.kyc.updateBasicInfo(req.user.sub, id, body);
   }
@@ -48,8 +48,8 @@ export class KycController {
   @ApiBearerAuth()
   updateMandatory(
     @Param('id') id: string,
-    @Request() req: any,
-    @Body() body: any,
+    @Request() req: AuthRequest,
+    @Body() body: Record<string, unknown>,
   ) {
     return this.kyc.updateMandatory(req.user.sub, id, body);
   }
@@ -59,8 +59,8 @@ export class KycController {
   @ApiBearerAuth()
   updateNominee(
     @Param('id') id: string,
-    @Request() req: any,
-    @Body() body: any,
+    @Request() req: AuthRequest,
+    @Body() body: Record<string, unknown>,
   ) {
     return this.kyc.updateNominee(req.user.sub, id, body);
   }
@@ -70,8 +70,8 @@ export class KycController {
   @ApiBearerAuth()
   updateSignature(
     @Param('id') id: string,
-    @Request() req: any,
-    @Body() body: any,
+    @Request() req: AuthRequest,
+    @Body() body: Record<string, unknown>,
   ) {
     return this.kyc.updateSignature(req.user.sub, id, body);
   }
@@ -79,7 +79,7 @@ export class KycController {
   @UseGuards(JwtAuthGuard)
   @Post(':id/submit')
   @ApiBearerAuth()
-  submit(@Param('id') id: string, @Request() req: any) {
+  submit(@Param('id') id: string, @Request() req: AuthRequest) {
     return this.kyc.submit(req.user.sub, id);
   }
 }

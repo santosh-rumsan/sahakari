@@ -14,6 +14,7 @@ import { Route as SetupCooperativeRouteImport } from './routes/setup-cooperative
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRecentActivitiesRouteImport } from './routes/_app.recent-activities'
 import { Route as AppLoansRouteImport } from './routes/_app/loans'
 import { Route as AppKycRouteImport } from './routes/_app/kyc'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
@@ -24,6 +25,7 @@ import { Route as AppKycIdRouteImport } from './routes/_app/kyc/$id'
 import { Route as AppCustomersIdRouteImport } from './routes/_app/customers/$id'
 import { Route as AppContactsNewRouteImport } from './routes/_app.contacts.new'
 import { Route as AppAppCooperativeRouteImport } from './routes/_app/_app.cooperative'
+import { Route as AppCustomersIdTransactionsRouteImport } from './routes/_app/customers/$id.transactions'
 import { Route as AppContactsIdEditRouteImport } from './routes/_app.contacts.$id.edit'
 
 const TodosRoute = TodosRouteImport.update({
@@ -49,6 +51,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppRecentActivitiesRoute = AppRecentActivitiesRouteImport.update({
+  id: '/recent-activities',
+  path: '/recent-activities',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppLoansRoute = AppLoansRouteImport.update({
   id: '/loans',
@@ -100,6 +107,12 @@ const AppAppCooperativeRoute = AppAppCooperativeRouteImport.update({
   path: '/cooperative',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCustomersIdTransactionsRoute =
+  AppCustomersIdTransactionsRouteImport.update({
+    id: '/transactions',
+    path: '/transactions',
+    getParentRoute: () => AppCustomersIdRoute,
+  } as any)
 const AppContactsIdEditRoute = AppContactsIdEditRouteImport.update({
   id: '/$id/edit',
   path: '/$id/edit',
@@ -116,12 +129,14 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AppDashboardRoute
   '/kyc': typeof AppKycRouteWithChildren
   '/loans': typeof AppLoansRouteWithChildren
+  '/recent-activities': typeof AppRecentActivitiesRoute
   '/cooperative': typeof AppAppCooperativeRoute
   '/contacts/new': typeof AppContactsNewRoute
-  '/customers/$id': typeof AppCustomersIdRoute
+  '/customers/$id': typeof AppCustomersIdRouteWithChildren
   '/kyc/$id': typeof AppKycIdRoute
   '/loans/$id': typeof AppLoansIdRoute
   '/contacts/$id/edit': typeof AppContactsIdEditRoute
+  '/customers/$id/transactions': typeof AppCustomersIdTransactionsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -133,12 +148,14 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AppDashboardRoute
   '/kyc': typeof AppKycRouteWithChildren
   '/loans': typeof AppLoansRouteWithChildren
+  '/recent-activities': typeof AppRecentActivitiesRoute
   '/cooperative': typeof AppAppCooperativeRoute
   '/contacts/new': typeof AppContactsNewRoute
-  '/customers/$id': typeof AppCustomersIdRoute
+  '/customers/$id': typeof AppCustomersIdRouteWithChildren
   '/kyc/$id': typeof AppKycIdRoute
   '/loans/$id': typeof AppLoansIdRoute
   '/contacts/$id/edit': typeof AppContactsIdEditRoute
+  '/customers/$id/transactions': typeof AppCustomersIdTransactionsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -152,12 +169,14 @@ export interface FileRoutesById {
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/kyc': typeof AppKycRouteWithChildren
   '/_app/loans': typeof AppLoansRouteWithChildren
+  '/_app/recent-activities': typeof AppRecentActivitiesRoute
   '/_app/_app/cooperative': typeof AppAppCooperativeRoute
   '/_app/contacts/new': typeof AppContactsNewRoute
-  '/_app/customers/$id': typeof AppCustomersIdRoute
+  '/_app/customers/$id': typeof AppCustomersIdRouteWithChildren
   '/_app/kyc/$id': typeof AppKycIdRoute
   '/_app/loans/$id': typeof AppLoansIdRoute
   '/_app/contacts/$id/edit': typeof AppContactsIdEditRoute
+  '/_app/customers/$id/transactions': typeof AppCustomersIdTransactionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -171,12 +190,14 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/kyc'
     | '/loans'
+    | '/recent-activities'
     | '/cooperative'
     | '/contacts/new'
     | '/customers/$id'
     | '/kyc/$id'
     | '/loans/$id'
     | '/contacts/$id/edit'
+    | '/customers/$id/transactions'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -188,12 +209,14 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/kyc'
     | '/loans'
+    | '/recent-activities'
     | '/cooperative'
     | '/contacts/new'
     | '/customers/$id'
     | '/kyc/$id'
     | '/loans/$id'
     | '/contacts/$id/edit'
+    | '/customers/$id/transactions'
   id:
     | '__root__'
     | '/'
@@ -206,12 +229,14 @@ export interface FileRouteTypes {
     | '/_app/dashboard'
     | '/_app/kyc'
     | '/_app/loans'
+    | '/_app/recent-activities'
     | '/_app/_app/cooperative'
     | '/_app/contacts/new'
     | '/_app/customers/$id'
     | '/_app/kyc/$id'
     | '/_app/loans/$id'
     | '/_app/contacts/$id/edit'
+    | '/_app/customers/$id/transactions'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -258,6 +283,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/recent-activities': {
+      id: '/_app/recent-activities'
+      path: '/recent-activities'
+      fullPath: '/recent-activities'
+      preLoaderRoute: typeof AppRecentActivitiesRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/loans': {
       id: '/_app/loans'
@@ -329,6 +361,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppCooperativeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/customers/$id/transactions': {
+      id: '/_app/customers/$id/transactions'
+      path: '/transactions'
+      fullPath: '/customers/$id/transactions'
+      preLoaderRoute: typeof AppCustomersIdTransactionsRouteImport
+      parentRoute: typeof AppCustomersIdRoute
+    }
     '/_app/contacts/$id/edit': {
       id: '/_app/contacts/$id/edit'
       path: '/$id/edit'
@@ -353,12 +392,24 @@ const AppContactsRouteWithChildren = AppContactsRoute._addFileChildren(
   AppContactsRouteChildren,
 )
 
+interface AppCustomersIdRouteChildren {
+  AppCustomersIdTransactionsRoute: typeof AppCustomersIdTransactionsRoute
+}
+
+const AppCustomersIdRouteChildren: AppCustomersIdRouteChildren = {
+  AppCustomersIdTransactionsRoute: AppCustomersIdTransactionsRoute,
+}
+
+const AppCustomersIdRouteWithChildren = AppCustomersIdRoute._addFileChildren(
+  AppCustomersIdRouteChildren,
+)
+
 interface AppCustomersRouteChildren {
-  AppCustomersIdRoute: typeof AppCustomersIdRoute
+  AppCustomersIdRoute: typeof AppCustomersIdRouteWithChildren
 }
 
 const AppCustomersRouteChildren: AppCustomersRouteChildren = {
-  AppCustomersIdRoute: AppCustomersIdRoute,
+  AppCustomersIdRoute: AppCustomersIdRouteWithChildren,
 }
 
 const AppCustomersRouteWithChildren = AppCustomersRoute._addFileChildren(
@@ -394,6 +445,7 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppKycRoute: typeof AppKycRouteWithChildren
   AppLoansRoute: typeof AppLoansRouteWithChildren
+  AppRecentActivitiesRoute: typeof AppRecentActivitiesRoute
   AppAppCooperativeRoute: typeof AppAppCooperativeRoute
 }
 
@@ -403,6 +455,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppKycRoute: AppKycRouteWithChildren,
   AppLoansRoute: AppLoansRouteWithChildren,
+  AppRecentActivitiesRoute: AppRecentActivitiesRoute,
   AppAppCooperativeRoute: AppAppCooperativeRoute,
 }
 

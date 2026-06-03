@@ -1,11 +1,25 @@
 import {
-  createFileRoute,
   Link,
   Outlet,
+  createFileRoute,
   useMatches,
 } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import { Users, Eye } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { BanknoteArrowDown, Eye, HandCoins, Users } from 'lucide-react'
+import { useState } from 'react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@rs/ui/tooltip'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@rs/ui/dialog'
+import { Button } from '@rs/ui/button'
+import { Field, FieldLabel } from '@rs/ui/field'
+import { Input } from '@rs/ui/input'
+import { Textarea } from '@rs/ui/textarea'
+import { toast } from '@rs/ui/toast'
+import { formatStatusLabel, getStatusBadgeClass } from '@/lib/status'
 
 export const Route = createFileRoute('/_app/customers')({
   component: CustomersPage,
@@ -23,6 +37,30 @@ function CustomersPage() {
     matches[matches.length - 1]?.routeId !== '/_app/customers'
 
   const token = getToken()
+  const queryClient = useQueryClient()
+
+  // State for deposit/withdraw dialogs
+  const [depositDialog, setDepositDialog] = useState<{
+    open: boolean
+    userId: string
+    userName: string
+  }>({ open: false, userId: '', userName: '' })
+
+  const [withdrawDialog, setWithdrawDialog] = useState<{
+    open: boolean
+    userId: string
+    userName: string
+  }>({ open: false, userId: '', userName: '' })
+
+  const [depositForm, setDepositForm] = useState({
+    amount: '',
+    description: '',
+  })
+
+  const [withdrawForm, setWithdrawForm] = useState({
+    amount: '',
+    description: '',
+  })
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ['admin-customers'],
@@ -35,6 +73,109 @@ function CustomersPage() {
     enabled: !!token,
   })
 
+  // Deposit mutation
+  const depositMutation = useMutation({
+    mutationFn: async (data: {
+      userId: string
+      amount: number
+      description?: string
+    }) => {
+      const res = await fetch(
+        `${apiUrl}/v1/admin/passbook/deposit/${data.userId}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            amount: data.amount,
+            description: data.description,
+          }),
+        },
+      )
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.message || 'Failed to deposit')
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      toast.success('Deposit successful')
+      setDepositDialog({ open: false, userId: '', userName: '' })
+      setDepositForm({ amount: '', description: '' })
+      queryClient.invalidateQueries({ queryKey: ['admin-customers'] })
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to deposit')
+    },
+  })
+
+  // Withdraw mutation
+  const withdrawMutation = useMutation({
+    mutationFn: async (data: {
+      userId: string
+      amount: number
+      description?: string
+    }) => {
+      const res = await fetch(
+        `${apiUrl}/v1/admin/passbook/withdraw/${data.userId}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            amount: data.amount,
+            description: data.description,
+          }),
+        },
+      )
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.message || 'Failed to withdraw')
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      toast.success('Withdrawal successful')
+      setWithdrawDialog({ open: false, userId: '', userName: '' })
+      setWithdrawForm({ amount: '', description: '' })
+      queryClient.invalidateQueries({ queryKey: ['admin-customers'] })
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to withdraw')
+    },
+  })
+
+  const handleDeposit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const amount = parseFloat(depositForm.amount)
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount')
+      return
+    }
+    depositMutation.mutate({
+      userId: depositDialog.userId,
+      amount,
+      description: depositForm.description || undefined,
+    })
+  }
+
+  const handleWithdraw = (e: React.FormEvent) => {
+    e.preventDefault()
+    const amount = parseFloat(withdrawForm.amount)
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount')
+      return
+    }
+    withdrawMutation.mutate({
+      userId: withdrawDialog.userId,
+      amount,
+      description: withdrawForm.description || undefined,
+    })
+  }
   if (isChildActive) return <Outlet />
 
   return (
@@ -76,7 +217,7 @@ function CustomersPage() {
                 <th className="text-left py-3 px-4 text-xs font-medium text-gray-500">
                   Registered
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-medium text-gray-500">
+                <th className="text-center py-3 px-4 text-xs  font-medium text-gray-500">
                   Actions
                 </th>
               </tr>
@@ -110,9 +251,11 @@ function CustomersPage() {
                   </td>
                   <td className="py-3 px-4">
                     <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${user.kyc?.status === 'APPROVED' ? 'bg-green-100 text-green-700' : user.kyc?.status === 'REJECTED' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${getStatusBadgeClass(user.kyc?.status)}`}
                     >
-                      {user.kyc?.status ?? 'Not Started'}
+                      {user.kyc?.status
+                        ? formatStatusLabel(user.kyc.status)
+                        : 'Not Started'}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-600">
@@ -121,14 +264,82 @@ function CustomersPage() {
                   <td className="py-3 px-4 text-xs text-gray-400">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
-                  <td className="py-3 px-4">
-                    <Link
-                      to={`/customers/${user.id}`}
-                      title="View member details"
-                      className="inline-flex items-center justify-center h-8 w-8 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-blue-600 transition-colors"
-                    >
-                      <Eye size={16} />
-                    </Link>
+                  <td className="py-3 ">
+                    <div className="flex items-center justify-center gap-1">
+                      <TooltipProvider>
+                        {/* View Action */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Link
+                              to={`/customers/${user.id}`}
+                              className="inline-flex items-center justify-center h-8 w-8 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-blue-600 transition-colors hover:cursor-pointer"
+                            >
+                              <Eye size={16} />
+                            </Link>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>View member details</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        {/* Deposit Action */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => {
+                                setDepositDialog({
+                                  open: true,
+                                  userId: user.id,
+                                  userName: user.fullName,
+                                })
+                                setDepositForm({ amount: '', description: '' })
+                              }}
+                              className="inline-flex items-center justify-center h-8 w-8 rounded-lg hover:bg-green-50 text-gray-600 hover:text-green-600 transition-colors hover:cursor-pointer"
+                              disabled={!user.passbookNumber}
+                            >
+                              <HandCoins size={16} />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              {user.passbookNumber
+                                ? 'Deposit money'
+                                : 'No passbook available'}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        {/* Withdraw Action */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => {
+                                setWithdrawDialog({
+                                  open: true,
+                                  userId: user.id,
+                                  userName: user.fullName,
+                                })
+                                setWithdrawForm({
+                                  amount: '',
+                                  description: '',
+                                })
+                              }}
+                              className="inline-flex items-center justify-center h-8 w-8 rounded-lg hover:bg-red-50 text-gray-600 hover:text-red-600 transition-colors hover:cursor-pointer"
+                              disabled={!user.passbookNumber}
+                            >
+                              <BanknoteArrowDown size={16} />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              {user.passbookNumber
+                                ? 'Withdraw money'
+                                : 'No passbook available'}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -136,6 +347,152 @@ function CustomersPage() {
           </table>
         </div>
       )}
+
+      {/* Deposit Dialog */}
+      <Dialog
+        open={depositDialog.open}
+        onOpenChange={(open) => setDepositDialog({ ...depositDialog, open })}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Deposit Money</DialogTitle>
+            <p className="text-sm text-gray-500 mt-1">
+              Deposit to {depositDialog.userName}'s account
+            </p>
+          </DialogHeader>
+          <form onSubmit={handleDeposit} className="space-y-4 mt-4">
+            <Field>
+              <FieldLabel htmlFor="depositAmount">
+                Amount (NPR) <span className="text-red-500">*</span>
+              </FieldLabel>
+              <Input
+                id="depositAmount"
+                type="number"
+                step="0.01"
+                placeholder="Enter amount"
+                value={depositForm.amount}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setDepositForm({
+                    ...depositForm,
+                    amount: e.target.value,
+                  })
+                }
+                required
+              />
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="depositDescription">
+                Description (Optional)
+              </FieldLabel>
+              <Textarea
+                id="depositDescription"
+                placeholder="Enter description"
+                value={depositForm.description}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setDepositForm({
+                    ...depositForm,
+                    description: e.target.value,
+                  })
+                }
+                rows={3}
+              />
+            </Field>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  setDepositDialog({ open: false, userId: '', userName: '' })
+                }
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={depositMutation.isPending}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {depositMutation.isPending ? 'Processing...' : 'Deposit'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Withdraw Dialog */}
+      <Dialog
+        open={withdrawDialog.open}
+        onOpenChange={(open) => setWithdrawDialog({ ...withdrawDialog, open })}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Withdraw Money</DialogTitle>
+            <p className="text-sm text-gray-500 mt-1">
+              Withdraw from {withdrawDialog.userName}'s account
+            </p>
+          </DialogHeader>
+          <form onSubmit={handleWithdraw} className="space-y-4 mt-4">
+            <Field>
+              <FieldLabel htmlFor="withdrawAmount">
+                Amount (NPR) <span className="text-red-500">*</span>
+              </FieldLabel>
+              <Input
+                id="withdrawAmount"
+                type="number"
+                step="0.01"
+                placeholder="Enter amount"
+                value={withdrawForm.amount}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setWithdrawForm({
+                    ...withdrawForm,
+                    amount: e.target.value,
+                  })
+                }
+                required
+              />
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="withdrawDescription">
+                Description (Optional)
+              </FieldLabel>
+              <Textarea
+                id="withdrawDescription"
+                placeholder="Enter description"
+                value={withdrawForm.description}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setWithdrawForm({
+                    ...withdrawForm,
+                    description: e.target.value,
+                  })
+                }
+                rows={3}
+              />
+            </Field>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  setWithdrawDialog({ open: false, userId: '', userName: '' })
+                }
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={withdrawMutation.isPending}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {withdrawMutation.isPending ? 'Processing...' : 'Withdraw'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

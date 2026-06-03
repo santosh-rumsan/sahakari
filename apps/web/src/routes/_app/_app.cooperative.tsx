@@ -2,14 +2,15 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import {
   Building2,
-  MapPin,
   Calendar,
-  FileText,
-  Mail,
-  Phone,
   Edit,
+  FileText,
   Loader2,
+  Mail,
+  MapPin,
+  Phone,
 } from 'lucide-react'
+import { getStatusBadgeClass } from '@/lib/status'
 
 const apiUrl = import.meta.env['VITE_API_URL'] ?? ''
 
@@ -151,11 +152,7 @@ function CooperativePage() {
                 )}
                 <div className="flex items-center gap-2 mt-2">
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      cooperative.isActive
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(cooperative.isActive ? 'ACTIVE' : 'INACTIVE')}`}
                   >
                     {cooperative.isActive ? 'Active' : 'Inactive'}
                   </span>
@@ -219,7 +216,7 @@ function CooperativePage() {
               Address
             </h3>
             <div className="flex gap-3">
-              <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+              <MapPin className="w-5 h-5 text-gray-400 shrink-0 mt-0.5" />
               <p className="text-gray-700">{getAddress()}</p>
             </div>
           </div>
@@ -269,7 +266,7 @@ function CooperativePage() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
+          <div className="bg-linear-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
             <h3 className="text-sm font-semibold text-blue-900 mb-2">
               System Status
             </h3>
@@ -296,10 +293,10 @@ interface InfoItemProps {
 function InfoItem({ icon, label, value }: InfoItemProps) {
   return (
     <div className="flex gap-3">
-      <div className="flex-shrink-0 mt-0.5">{icon}</div>
+      <div className="shrink-0 mt-0.5">{icon}</div>
       <div className="min-w-0 flex-1">
         <p className="text-xs text-gray-500 mb-1">{label}</p>
-        <p className="text-sm font-medium text-gray-900 break-words">
+        <p className="text-sm font-medium text-gray-900 wrap-break-word">
           {value || 'N/A'}
         </p>
       </div>

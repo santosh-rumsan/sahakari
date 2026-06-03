@@ -108,8 +108,8 @@ function NewLoanPage() {
     queryKey: ["current-loan"],
     queryFn: async () => {
       const existing = await loanApi.listMine(token);
-      if (existing.length > 0 && existing[0].status === "DRAFT")
-        return existing[0];
+      const draft = existing.find((item) => item.status === "DRAFT");
+      if (draft) return draft;
       return loanApi.create(token);
     },
     enabled: loanEligible,
@@ -165,9 +165,7 @@ function NewLoanPage() {
     return (
       <RouteMessage
         title="Unable to load KYC"
-        message={
-          kycError instanceof Error ? kycError.message : "Please try again."
-        }
+        message={kycError.message}
         actionLabel="Back to Loans"
         actionTo="/app/loans"
       />
@@ -189,9 +187,7 @@ function NewLoanPage() {
     return (
       <RouteMessage
         title="Unable to load loan application"
-        message={
-          loanError instanceof Error ? loanError.message : "Please try again."
-        }
+        message={loanError.message}
         actionLabel="Back to Loans"
         actionTo="/app/loans"
       />
@@ -672,7 +668,7 @@ function LoanAddress({
   onBack,
 }: {
   loan: any;
-  provinces: any[];
+  provinces: Array<any>;
   onSave: (d: Record<string, unknown>) => void;
   onNext: () => void;
   onBack: () => void;
@@ -711,7 +707,7 @@ function LoanAddress({
         e.preventDefault();
         const values = form.state.values;
         const provinceName =
-          provinces?.find((p) => p.id === values.province)?.name ??
+          provinces.find((p) => p.id === values.province)?.name ??
           values.province;
         onSave({
           ...values,
@@ -737,7 +733,7 @@ function LoanAddress({
               onBlur={f.handleBlur}
             >
               <option value="">Select Province</option>
-              {provinces?.map((p) => (
+              {provinces.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>

@@ -1,8 +1,4 @@
-import {
-  Link,
-  Outlet,
-  createRootRoute,
-} from '@tanstack/react-router'
+import { Link, Outlet, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { configureSDK } from '@rs/sdk'
@@ -34,7 +30,10 @@ function NotFound() {
       <p className="text-muted-foreground text-sm">
         The page you requested does not exist.
       </p>
-      <Link to="/" className="text-primary text-sm underline underline-offset-4">
+      <Link
+        to="/"
+        className="text-primary text-sm underline underline-offset-4"
+      >
         Back to home
       </Link>
     </main>

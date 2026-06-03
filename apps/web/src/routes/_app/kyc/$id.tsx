@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { ChevronLeft, CheckCircle2, XCircle } from 'lucide-react'
+import { CheckCircle2, ChevronLeft, XCircle } from 'lucide-react'
+import { formatStatusLabel, getStatusBadgeClass } from '@/lib/status'
 
 export const Route = createFileRoute('/_app/kyc/$id')({
   component: KycDetailPage,
@@ -59,17 +60,9 @@ function KycDetailPage() {
       navigate({ to: '/kyc' })
     },
     onError: (err: Error) => {
-      setReviewError(err.message ?? 'Failed to update status')
+      setReviewError(err.message || 'Failed to update status')
     },
   })
-
-  const statusColors: Record<string, string> = {
-    APPROVED: 'bg-green-100 text-green-700',
-    PENDING: 'bg-yellow-100 text-yellow-700',
-    UNDER_REVIEW: 'bg-orange-100 text-orange-700',
-    REJECTED: 'bg-red-100 text-red-700',
-    DRAFT: 'bg-gray-100 text-gray-600',
-  }
 
   const tabs = ['Basic Info', 'Mandatory', 'Nominee', 'Signature']
 
@@ -90,9 +83,9 @@ function KycDetailPage() {
         </button>
         <h1 className="text-2xl font-bold text-[#1a1a1a]">KYC Review</h1>
         <span
-          className={`rounded-full px-3 py-1 text-xs font-medium ${statusColors[kyc.status] ?? 'bg-gray-100'}`}
+          className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(kyc.status)}`}
         >
-          {kyc.status?.replace('_', ' ')}
+          {formatStatusLabel(kyc.status)}
         </span>
       </div>
 

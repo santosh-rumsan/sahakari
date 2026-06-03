@@ -1,12 +1,13 @@
 import {
-  createFileRoute,
   Link,
   Outlet,
+  createFileRoute,
   useMatches,
 } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Eye, CreditCard } from 'lucide-react'
+import { CreditCard, Eye } from 'lucide-react'
+import { formatStatusLabel, getStatusBadgeClass } from '@/lib/status'
 
 export const Route = createFileRoute('/_app/loans')({
   component: LoansPage,
@@ -43,14 +44,6 @@ function LoansPage() {
   if (isChildActive) return <Outlet />
 
   const loans = data?.data ?? []
-
-  const statusColors: Record<string, string> = {
-    APPROVED: 'bg-green-100 text-green-700',
-    SUBMITTED: 'bg-blue-100 text-blue-700',
-    UNDER_REVIEW: 'bg-orange-100 text-orange-700',
-    REJECTED: 'bg-red-100 text-red-700',
-    DRAFT: 'bg-gray-100 text-gray-600',
-  }
 
   return (
     <div className="flex-1 overflow-y-auto px-8 py-7">
@@ -114,9 +107,9 @@ function LoansPage() {
               </div>
               <div className="flex items-center gap-3">
                 <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[loan.status] ?? 'bg-gray-100'}`}
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeClass(loan.status)}`}
                 >
-                  {loan.status?.replace('_', ' ')}
+                  {formatStatusLabel(loan.status)}
                 </span>
                 <Link
                   to={`/loans/${loan.id}`}

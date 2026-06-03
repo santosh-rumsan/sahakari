@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link } from '@tanstack/react-router'
-import { Settings, ChevronLeft, ChevronRight, User } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Settings, User } from 'lucide-react'
 import { cn } from '@rs/ui'
 
 export interface SidebarNavItem {
@@ -13,7 +13,7 @@ export interface SidebarNavItem {
 }
 
 export interface ExpandableSidebarProps {
-  navItems?: SidebarNavItem[]
+  navItems?: Array<SidebarNavItem>
   /** User name shown at the bottom */
   userName?: string
   /** User email shown at the bottom */
@@ -69,7 +69,7 @@ export function ExpandableSidebar({
   return (
     <div
       className={cn(
-        'bg-[#0e6c52] flex flex-col py-4 gap-2 shrink-0 transition-all duration-300 ease-in-out relative',
+        'bg-teal-800 flex flex-col py-4 gap-2 shrink-0 transition-all duration-300 ease-in-out relative',
         isExpanded ? 'w-64' : 'w-16',
         className,
       )}

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { CreateContactInput, UpdateContactInput } from '@rs/sdk'
 import { getContactStorage } from '../lib/storage'
+import type { CreateContactInput, UpdateContactInput } from '@rs/sdk'
 
 const CONTACTS_KEY = ['contacts'] as const
 

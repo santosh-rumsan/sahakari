@@ -9,8 +9,6 @@ import {
 import multipart from '@fastify/multipart';
 import staticFiles from '@fastify/static';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { WinstonModule } from 'nest-winston';
-import { format, transports } from 'winston';
 import { AppModule } from './app.module';
 
 const envFiles = [
@@ -90,7 +88,10 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
-  const maxUploadBytes = parseInt(process.env.MAX_UPLOAD_SIZE_BYTES ?? String(1 * 1024 * 1024), 10);
+  const maxUploadBytes = parseInt(
+    process.env.MAX_UPLOAD_SIZE_BYTES ?? String(1 * 1024 * 1024),
+    10,
+  );
   await app.register(multipart, {
     limits: {
       fileSize: maxUploadBytes,

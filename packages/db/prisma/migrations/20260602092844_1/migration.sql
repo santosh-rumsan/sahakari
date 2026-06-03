@@ -26,13 +26,19 @@ CREATE TYPE "LoanDuration" AS ENUM ('SIX_MONTHS', 'ONE_YEAR', 'TWO_YEARS', 'THRE
 CREATE TYPE "CollateralType" AS ENUM ('WITH', 'WITHOUT');
 
 -- CreateEnum
-CREATE TYPE "LoanStatus" AS ENUM ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED');
+CREATE TYPE "LoanStatus" AS ENUM ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'DISBURSED', 'ACTIVE', 'COMPLETED', 'DEFAULTED', 'OVERDUE');
+
+-- CreateEnum
+CREATE TYPE "PassbookTransactionType" AS ENUM ('DEPOSIT', 'WITHDRAWAL', 'LOAN_DISBURSEMENT', 'INTEREST_CREDIT', 'FEE_DEDUCTION', 'TRANSFER_IN', 'TRANSFER_OUT');
 
 -- CreateEnum
 CREATE TYPE "AdminRole" AS ENUM ('ADMIN', 'SUPER_ADMIN');
 
 -- CreateEnum
 CREATE TYPE "NotificationType" AS ENUM ('KYC_STATUS', 'LOAN_STATUS', 'GENERAL');
+
+-- CreateEnum
+CREATE TYPE "PaymentFrequency" AS ENUM ('DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'ANNUAL');
 
 -- CreateTable
 CREATE TABLE "Todo" (
@@ -62,6 +68,30 @@ CREATE TABLE "Contact" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Contact_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Cooperative" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "code" TEXT,
+    "provinceId" TEXT,
+    "districtId" TEXT,
+    "municipalityId" TEXT,
+    "wardNumber" INTEGER,
+    "tole" TEXT,
+    "address" TEXT,
+    "establishedYear" TIMESTAMP(3),
+    "panNumber" TEXT,
+    "registrationNumber" TEXT,
+    "logoUrl" TEXT,
+    "email" TEXT,
+    "contactNumber" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Cooperative_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -105,7 +135,7 @@ CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
     "fullName" TEXT NOT NULL,
-    "cooperative" TEXT NOT NULL,
+    "cooperativeId" TEXT NOT NULL,
     "passbookNumber" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "email" TEXT,
@@ -199,6 +229,8 @@ CREATE TABLE "LoanApplication" (
     "purpose" "LoanPurpose",
     "duration" "LoanDuration",
     "collateralType" "CollateralType",
+    "paymentFrequency" "PaymentFrequency",
+    "numberOfInstallments" INTEGER,
     "province" TEXT,
     "districtId" TEXT,
     "municipalityId" TEXT,
@@ -220,10 +252,38 @@ CREATE TABLE "LoanApplication" (
     "reviewedAt" TIMESTAMP(3),
     "reviewedById" TEXT,
     "rejectionReason" TEXT,
+    "isDisbursed" BOOLEAN NOT NULL DEFAULT false,
+    "disbursedAmount" DOUBLE PRECISION,
+    "disbursedDate" TIMESTAMP(3),
+    "interestRate" DOUBLE PRECISION,
+    "outstandingBalance" DOUBLE PRECISION,
+    "totalPaid" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "lateFeePercentage" DOUBLE PRECISION DEFAULT 2,
+    "gracePeriodDays" INTEGER DEFAULT 7,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "LoanApplication_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LoanInstallment" (
+    "id" TEXT NOT NULL,
+    "loanApplicationId" TEXT NOT NULL,
+    "installmentNumber" INTEGER NOT NULL,
+    "dueDate" TIMESTAMP(3) NOT NULL,
+    "principalAmount" DOUBLE PRECISION NOT NULL,
+    "interestAmount" DOUBLE PRECISION NOT NULL,
+    "totalAmount" DOUBLE PRECISION NOT NULL,
+    "isPaid" BOOLEAN NOT NULL DEFAULT false,
+    "paidAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "paidDate" TIMESTAMP(3),
+    "penaltyAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "daysPastDue" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "LoanInstallment_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -232,8 +292,9 @@ CREATE TABLE "AdminUser" (
     "email" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "role" "AdminRole" NOT NULL DEFAULT 'ADMIN',
+    "cooperativeId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "AdminUser_pkey" PRIMARY KEY ("id")
 );
@@ -269,11 +330,14 @@ CREATE TABLE "Notification" (
 CREATE TABLE "Passbook" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
+    "openingBalance" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "currentBalance" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "totalSavings" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "totalWithdrawals" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "interestRateSavings" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "interestRateLoan" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "lastInterestCreditedAt" TIMESTAMP(3),
+    "lastInterestMonth" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -284,14 +348,30 @@ CREATE TABLE "Passbook" (
 CREATE TABLE "PassbookTransaction" (
     "id" TEXT NOT NULL,
     "passbookId" TEXT NOT NULL,
-    "type" TEXT NOT NULL,
+    "type" "PassbookTransactionType" NOT NULL,
     "amount" DOUBLE PRECISION NOT NULL,
     "description" TEXT,
     "balanceAfter" DOUBLE PRECISION NOT NULL,
+    "loanApplicationId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "PassbookTransaction_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Cooperative_name_key" ON "Cooperative"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Cooperative_code_key" ON "Cooperative"("code");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Cooperative_panNumber_key" ON "Cooperative"("panNumber");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Cooperative_registrationNumber_key" ON "Cooperative"("registrationNumber");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Cooperative_email_key" ON "Cooperative"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Province_name_key" ON "Province"("name");
@@ -309,6 +389,9 @@ CREATE UNIQUE INDEX "User_phone_key" ON "User"("phone");
 CREATE UNIQUE INDEX "User_passbookNumber_key" ON "User"("passbookNumber");
 
 -- CreateIndex
+CREATE INDEX "User_cooperativeId_idx" ON "User"("cooperativeId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Kyc_userId_key" ON "Kyc"("userId");
 
 -- CreateIndex
@@ -321,16 +404,40 @@ CREATE UNIQUE INDEX "Kyc_ninIdNumber_key" ON "Kyc"("ninIdNumber");
 CREATE UNIQUE INDEX "LoanApplication_referenceNumber_key" ON "LoanApplication"("referenceNumber");
 
 -- CreateIndex
+CREATE INDEX "LoanInstallment_loanApplicationId_idx" ON "LoanInstallment"("loanApplicationId");
+
+-- CreateIndex
+CREATE INDEX "LoanInstallment_dueDate_idx" ON "LoanInstallment"("dueDate");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "LoanInstallment_loanApplicationId_installmentNumber_key" ON "LoanInstallment"("loanApplicationId", "installmentNumber");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "AdminUser_email_key" ON "AdminUser"("email");
 
 -- CreateIndex
+CREATE INDEX "AdminUser_cooperativeId_idx" ON "AdminUser"("cooperativeId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Passbook_userId_key" ON "Passbook"("userId");
+
+-- AddForeignKey
+ALTER TABLE "Cooperative" ADD CONSTRAINT "Cooperative_provinceId_fkey" FOREIGN KEY ("provinceId") REFERENCES "Province"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Cooperative" ADD CONSTRAINT "Cooperative_districtId_fkey" FOREIGN KEY ("districtId") REFERENCES "District"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Cooperative" ADD CONSTRAINT "Cooperative_municipalityId_fkey" FOREIGN KEY ("municipalityId") REFERENCES "Municipality"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "District" ADD CONSTRAINT "District_provinceId_fkey" FOREIGN KEY ("provinceId") REFERENCES "Province"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Municipality" ADD CONSTRAINT "Municipality_districtId_fkey" FOREIGN KEY ("districtId") REFERENCES "District"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "User" ADD CONSTRAINT "User_cooperativeId_fkey" FOREIGN KEY ("cooperativeId") REFERENCES "Cooperative"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Kyc" ADD CONSTRAINT "Kyc_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -351,6 +458,12 @@ ALTER TABLE "LoanApplication" ADD CONSTRAINT "LoanApplication_districtId_fkey" F
 ALTER TABLE "LoanApplication" ADD CONSTRAINT "LoanApplication_municipalityId_fkey" FOREIGN KEY ("municipalityId") REFERENCES "Municipality"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "LoanInstallment" ADD CONSTRAINT "LoanInstallment_loanApplicationId_fkey" FOREIGN KEY ("loanApplicationId") REFERENCES "LoanApplication"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AdminUser" ADD CONSTRAINT "AdminUser_cooperativeId_fkey" FOREIGN KEY ("cooperativeId") REFERENCES "Cooperative"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "AdminOtp" ADD CONSTRAINT "AdminOtp_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "AdminUser"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -360,4 +473,10 @@ ALTER TABLE "AdminOtp" ADD CONSTRAINT "AdminOtp_userId_fkey" FOREIGN KEY ("userI
 ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Passbook" ADD CONSTRAINT "Passbook_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "PassbookTransaction" ADD CONSTRAINT "PassbookTransaction_passbookId_fkey" FOREIGN KEY ("passbookId") REFERENCES "Passbook"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PassbookTransaction" ADD CONSTRAINT "PassbookTransaction_loanApplicationId_fkey" FOREIGN KEY ("loanApplicationId") REFERENCES "LoanApplication"("id") ON DELETE SET NULL ON UPDATE CASCADE;

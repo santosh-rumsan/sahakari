@@ -10,7 +10,8 @@ import { JwtStrategy } from './jwt.strategy';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       useFactory: () => ({
-        secret: process.env.JWT_SECRET ?? 'fallback-secret-change-in-production',
+        secret:
+          process.env.JWT_SECRET ?? 'fallback-secret-change-in-production',
         signOptions: { expiresIn: '7d' },
       }),
     }),

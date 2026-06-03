@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import {
   Tooltip,
@@ -18,7 +18,7 @@ export default function TooltipWrapper({
   children,
   disable = false,
 }: TooltipWrapperProps) {
-  if (disable || !tip?.trim()) {
+  if (disable || !tip.trim()) {
     return <>{children}</>;
   }
   return (

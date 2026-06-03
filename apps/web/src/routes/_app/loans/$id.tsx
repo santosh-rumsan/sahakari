@@ -1,7 +1,13 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { ChevronLeft, CheckCircle2, XCircle, Printer } from 'lucide-react'
+
+import { CheckCircle2, ChevronLeft, Printer } from 'lucide-react'
+import type { ApprovalFormData } from '@/components/ApprovalFormModal'
+import { ApprovalFormModal } from '@/components/ApprovalFormModal'
+import { DisbursementFormModal } from '@/components/DisbursementFormModal'
+import { RecordPaymentModal } from '@/components/RecordPaymentModal'
+import { formatStatusLabel, getStatusBadgeClass } from '@/lib/status'
 
 export const Route = createFileRoute('/_app/loans/$id')({
   component: LoanDetailPage,
@@ -18,8 +24,105 @@ function LoanDetailPage() {
   const navigate = useNavigate()
   const token = getToken()
   const qc = useQueryClient()
-  const [showRejectModal, setShowRejectModal] = useState(false)
-  const [rejectReason, setRejectReason] = useState('')
+  const [showApprovalModal, setShowApprovalModal] = useState(false)
+  const [showDisburseModal, setShowDisburseModal] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [approvalLoading, setApprovalLoading] = useState(false)
+  const [disburseLoading, setDisburseLoading] = useState(false)
+  const [paymentLoading, setPaymentLoading] = useState(false)
+  // Show modals based on status
+  // Approval API
+  const handleApprove = async (data: ApprovalFormData) => {
+    setApprovalLoading(true)
+    try {
+      const res = await fetch(
+        `${apiUrl}/v1/admin/loans/${id}/review?action=APPROVED`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            interestRate: data.interestRate,
+            paymentFrequency: data.paymentFrequency,
+            installments: data.installments,
+            gracePeriod: data.gracePeriod,
+            lateFee: data.lateFee,
+          }),
+        },
+      )
+      if (!res.ok) throw new Error('Failed to approve')
+      qc.invalidateQueries({ queryKey: ['admin-loan', id] })
+      setShowApprovalModal(false)
+    } catch (e: any) {
+    } finally {
+      setApprovalLoading(false)
+    }
+  }
+
+  const handleReject = async (reason: string) => {
+    setApprovalLoading(true)
+    try {
+      const res = await fetch(
+        `${apiUrl}/v1/admin/loans/${id}/review?action=REJECTED&reason=${encodeURIComponent(reason)}`,
+        {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      )
+      if (!res.ok) throw new Error('Failed to reject')
+      qc.invalidateQueries({ queryKey: ['admin-loan', id] })
+      setShowApprovalModal(false)
+    } catch (e: any) {
+    } finally {
+      setApprovalLoading(false)
+    }
+  }
+
+  // Disbursement API
+  const handleDisburse = async () => {
+    setDisburseLoading(true)
+    try {
+      const res = await fetch(`${apiUrl}/v1/admin/loans/${id}/disburse`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Failed to disburse')
+      qc.invalidateQueries({ queryKey: ['admin-loan', id] })
+      setShowDisburseModal(false)
+    } catch (e: any) {
+      // handle error (optional)
+    } finally {
+      setDisburseLoading(false)
+    }
+  }
+
+  const handleRecordPayment = async (payload: {
+    installmentNumbers: Array<number>
+    paymentDate: string
+  }) => {
+    setPaymentLoading(true)
+    try {
+      const res = await fetch(`${apiUrl}/v1/admin/loans/${id}/record-payment`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) throw new Error('Failed to record payment')
+
+      qc.invalidateQueries({ queryKey: ['admin-loan', id] })
+      setShowPaymentModal(false)
+    } catch (e: any) {
+      // handle error (optional)
+    } finally {
+      setPaymentLoading(false)
+    }
+  }
 
   const {
     data: loan,
@@ -40,48 +143,18 @@ function LoanDetailPage() {
     enabled: !!token,
   })
 
-  const reviewMutation = useMutation({
-    mutationFn: async ({
-      action,
-      reason,
-    }: {
-      action: 'APPROVED' | 'REJECTED'
-      reason?: string
-    }) => {
-      const params = new URLSearchParams({ action })
-      if (reason) params.set('reason', reason)
-      const res = await fetch(
-        `${apiUrl}/v1/admin/loans/${id}/review?${params}`,
-        {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      )
-      if (!res.ok) throw new Error('Failed to review')
-      return res.json()
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin-loans'] })
-      navigate({ to: '/loans' })
-    },
-  })
-
-  const statusColors: Record<string, string> = {
-    APPROVED: 'bg-green-100 text-green-700',
-    SUBMITTED: 'bg-blue-100 text-blue-700',
-    UNDER_REVIEW: 'bg-orange-100 text-orange-700',
-    REJECTED: 'bg-red-100 text-red-700',
-    DRAFT: 'bg-gray-100 text-gray-600',
-  }
+  const shouldShowApproval = loan?.status === 'SUBMITTED'
+  const shouldShowDisburse = loan?.status === 'APPROVED' && !loan?.disbursed
+  const shouldShowPayment =
+    !!loan?.isDisbursed &&
+    (loan?.installments ?? []).some((item: any) => !item.isPaid)
 
   if (isLoading)
     return <div className="p-8 text-center text-gray-400">Loading...</div>
   if (error)
     return (
       <div className="p-8 text-center">
-        <p className="text-red-500">
-          Error loading loan: {(error as Error).message}
-        </p>
+        <p className="text-red-500">Error loading loan: {error.message}</p>
         <button
           onClick={() => navigate({ to: '/loans' })}
           className="mt-4 text-blue-600 hover:underline"
@@ -144,6 +217,14 @@ function LoanDetailPage() {
           <ChevronLeft size={16} /> Back to Loans
         </button>
         <div className="flex items-center gap-3">
+          {shouldShowPayment && (
+            <button
+              onClick={() => setShowPaymentModal(true)}
+              className="flex items-center gap-2 rounded-lg border border-blue-600 bg-white px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 shadow-sm"
+            >
+              <CheckCircle2 size={16} /> Record Payment
+            </button>
+          )}
           <button
             onClick={handlePrint}
             className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 shadow-md"
@@ -151,9 +232,9 @@ function LoanDetailPage() {
             <Printer size={16} /> Print
           </button>
           <span
-            className={`rounded-full px-3 py-1 text-xs font-medium ${statusColors[loan.status] ?? 'bg-gray-100'}`}
+            className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(loan.status)}`}
           >
-            {loan.status?.replace('_', ' ')}
+            {formatStatusLabel(loan.status)}
           </span>
         </div>
       </div>
@@ -678,24 +759,27 @@ function LoanDetailPage() {
 
       {/* Action Buttons */}
       <div className="mx-auto max-w-4xl no-print">
-        {loan.status === 'SUBMITTED' || loan.status === 'UNDER_REVIEW' ? (
+        {shouldShowApproval && (
           <div className="flex gap-4 justify-center">
             <button
-              onClick={() => reviewMutation.mutate({ action: 'APPROVED' })}
-              disabled={reviewMutation.isPending}
-              className="flex items-center gap-2 rounded-lg bg-green-600 px-8 py-3 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50 shadow-md"
+              onClick={() => setShowApprovalModal(true)}
+              className="flex items-center gap-2 rounded-lg bg-blue-600 px-8 py-3 text-sm font-semibold text-white hover:bg-blue-700 shadow-md"
             >
-              <CheckCircle2 size={18} /> Approve Loan
-            </button>
-            <button
-              onClick={() => setShowRejectModal(true)}
-              disabled={reviewMutation.isPending}
-              className="flex items-center gap-2 rounded-lg bg-red-600 px-8 py-3 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 shadow-md"
-            >
-              <XCircle size={18} /> Reject Loan
+              <CheckCircle2 size={18} /> Review & Approve/Reject
             </button>
           </div>
-        ) : (
+        )}
+        {shouldShowDisburse && (
+          <div className="flex gap-4 justify-center mt-4">
+            <button
+              onClick={() => setShowDisburseModal(true)}
+              className="flex items-center gap-2 rounded-lg bg-blue-600 px-8 py-3 text-sm font-semibold text-white hover:bg-blue-700 shadow-md"
+            >
+              <CheckCircle2 size={18} /> Disburse Loan
+            </button>
+          </div>
+        )}
+        {!shouldShowApproval && !shouldShowDisburse && (
           <div className="text-center p-4 bg-gray-100 rounded-lg">
             <p className="text-sm text-gray-600 font-medium">
               This loan application has been{' '}
@@ -705,44 +789,30 @@ function LoanDetailPage() {
         )}
       </div>
 
-      {showRejectModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 no-print">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-            <h3 className="text-base font-bold mb-2">Reject Loan</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Please provide a reason for rejection.
-            </p>
-            <textarea
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              rows={3}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="Rejection reason..."
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  reviewMutation.mutate({
-                    action: 'REJECTED',
-                    reason: rejectReason,
-                  })
-                  setShowRejectModal(false)
-                }}
-                disabled={!rejectReason.trim()}
-                className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-              >
-                Confirm Reject
-              </button>
-              <button
-                onClick={() => setShowRejectModal(false)}
-                className="flex-1 rounded-lg border border-gray-200 py-2 text-sm text-gray-600 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Approval Modal */}
+      <ApprovalFormModal
+        open={showApprovalModal}
+        onClose={() => setShowApprovalModal(false)}
+        loan={loan}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        loading={approvalLoading}
+      />
+      {/* Disbursement Modal */}
+      <DisbursementFormModal
+        open={showDisburseModal}
+        onClose={() => setShowDisburseModal(false)}
+        loan={loan}
+        onDisburse={handleDisburse}
+        loading={disburseLoading}
+      />
+      <RecordPaymentModal
+        open={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        loan={loan}
+        onSubmit={handleRecordPayment}
+        loading={paymentLoading}
+      />
     </div>
   )
 }

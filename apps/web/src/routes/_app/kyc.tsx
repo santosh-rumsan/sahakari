@@ -1,12 +1,13 @@
 import {
-  createFileRoute,
   Link,
   Outlet,
+  createFileRoute,
   useMatches,
 } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Eye, ChevronLeft, FileText } from 'lucide-react'
+import { ChevronLeft, Eye, FileText } from 'lucide-react'
+import { formatStatusLabel, getStatusBadgeClass } from '@/lib/status'
 
 export const Route = createFileRoute('/_app/kyc')({
   component: KycPage,
@@ -42,14 +43,6 @@ function KycPage() {
   if (isChildActive) return <Outlet />
 
   const kycList = data?.data ?? []
-
-  const statusColors: Record<string, string> = {
-    APPROVED: 'bg-green-100 text-green-700',
-    PENDING: 'bg-yellow-100 text-yellow-700',
-    UNDER_REVIEW: 'bg-orange-100 text-orange-700',
-    REJECTED: 'bg-red-100 text-red-700',
-    DRAFT: 'bg-gray-100 text-gray-600',
-  }
 
   return (
     <div className="flex-1 overflow-y-auto px-8 py-7">
@@ -109,9 +102,9 @@ function KycPage() {
               </div>
               <div className="flex items-center gap-3">
                 <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[kyc.status] ?? 'bg-gray-100'}`}
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusBadgeClass(kyc.status)}`}
                 >
-                  {kyc.status?.replace('_', ' ')}
+                  {formatStatusLabel(kyc.status)}
                 </span>
                 <Link
                   to={`/kyc/${kyc.id}`}

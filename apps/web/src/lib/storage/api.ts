@@ -9,7 +9,7 @@ export class ApiContactStorage implements ContactStorage {
     this.api = createContactsApi(baseUrl)
   }
 
-  list(): Promise<Contact[]> {
+  list(): Promise<Array<Contact>> {
     return this.api.list()
   }
 

@@ -10,7 +10,7 @@
     "deploy": "pnpm build && wrangler pages deploy dist",
     "test": "vitest run",
     "lint": "eslint",
-    "format": "prettier",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
     "check": "prettier --write . && eslint --fix"
   },
   "dependencies": {

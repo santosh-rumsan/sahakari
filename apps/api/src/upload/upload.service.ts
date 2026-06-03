@@ -22,11 +22,15 @@ export class UploadService {
   private bucket = process.env.R2_BUCKET_NAME ?? 'sahakari-uploads';
   private r2PublicUrl = process.env.R2_PUBLIC_URL ?? '';
   private r2UploadPath = process.env.R2_UPLOAD_PATH ?? 'uploads';
-  private maxUploadBytes = parseInt(process.env.MAX_UPLOAD_SIZE_BYTES ?? String(1 * 1024 * 1024), 10);
+  private maxUploadBytes = parseInt(
+    process.env.MAX_UPLOAD_SIZE_BYTES ?? String(1 * 1024 * 1024),
+    10,
+  );
 
   /** Absolute path on disk. When set, files are stored locally instead of R2. */
   private localUploadPath = process.env.UPLOAD_LOCAL_PATH ?? '';
-  private apiBaseUrl = process.env.API_BASE_URL ?? `http://localhost:${process.env.PORT ?? 4000}`;
+  private apiBaseUrl =
+    process.env.API_BASE_URL ?? `http://localhost:${process.env.PORT ?? 4000}`;
 
   constructor() {
     if (this.localUploadPath) {
@@ -49,15 +53,18 @@ export class UploadService {
 
   private getExtension(contentType: string, filename?: string): string {
     if (contentType === 'application/pdf') return 'pdf';
-    if (contentType === 'image/jpeg' || contentType === 'image/jpg') return 'jpg';
+    if (contentType === 'image/jpeg' || contentType === 'image/jpg')
+      return 'jpg';
     if (contentType === 'image/png') return 'png';
     if (contentType === 'image/webp') return 'webp';
 
-    const fileExt = filename ? extname(filename).replace('.', '').toLowerCase() : '';
+    const fileExt = filename
+      ? extname(filename).replace('.', '').toLowerCase()
+      : '';
     return fileExt || 'bin';
   }
 
-  private async saveLocally(buffer: Buffer, filename: string): Promise<string> {
+  private saveLocally(buffer: Buffer, filename: string): string {
     const filePath = join(this.localUploadPath, filename);
     writeFileSync(filePath, buffer);
     return `${this.apiBaseUrl}/v1/uploads/${filename}`;

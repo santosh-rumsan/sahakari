@@ -58,3 +58,4 @@ dist/
 
 # tanstack
 .tanstack
+apps/pwa/src/routeTree.gen.ts

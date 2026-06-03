@@ -111,8 +111,21 @@ enum LoanStatus {
   UNDER_REVIEW
   APPROVED
   REJECTED
-  ACTIVE
+  DISBURSED      
+  ACTIVE         
+  COMPLETED      
+  DEFAULTED     
   OVERDUE
+}
+
+enum PassbookTransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  LOAN_DISBURSEMENT
+  INTEREST_CREDIT
+  FEE_DEDUCTION
+  TRANSFER_IN
+  TRANSFER_OUT
 }
 
 enum AdminRole {
@@ -124,6 +137,14 @@ enum NotificationType {
   KYC_STATUS
   LOAN_STATUS
   GENERAL
+}
+
+enum PaymentFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUAL
 }
 
 model Cooperative {
@@ -309,6 +330,9 @@ model LoanApplication {
   purpose           LoanPurpose?
   duration          LoanDuration?
   collateralType    CollateralType?
+  
+  paymentFrequency      PaymentFrequency?  
+  numberOfInstallments  Int?              
 
   province          String?
   districtId        String?
@@ -336,8 +360,51 @@ model LoanApplication {
   reviewedAt        DateTime?
   reviewedById      String?
   rejectionReason   String?
+  
+  // NEW: Active loan tracking fields
+  isDisbursed         Boolean         @default(false)
+  disbursedAmount     Float?          
+  disbursedDate       DateTime?      
+  interestRate        Float?          
+  outstandingBalance  Float?         
+  totalPaid           Float           @default(0)  
+  lateFeePercentage Float?          @default(2)
+  gracePeriodDays   Int?            @default(7)
+  
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+  
+  // NEW: Link to passbook transactions
+  passbookTransactions PassbookTransaction[]
+  installments      LoanInstallment[]
+
+}
+
+model LoanInstallment {
+  id                  String          @id @default(cuid())
+  loanApplicationId   String
+  loanApplication     LoanApplication @relation(fields: [loanApplicationId], references: [id], onDelete: Cascade)
+  
+  installmentNumber   Int
+  dueDate             DateTime
+  
+  principalAmount     Float
+  interestAmount      Float
+  totalAmount         Float
+  
+  isPaid              Boolean         @default(false)
+  paidAmount          Float           @default(0)
+  paidDate            DateTime?
+  
+  penaltyAmount       Float           @default(0)
+  daysPastDue         Int             @default(0)
+  
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  
+  @@index([loanApplicationId])
+  @@index([dueDate])
+  @@unique([loanApplicationId, installmentNumber])
 }
 
 model AdminUser {
@@ -382,11 +449,17 @@ model Passbook {
   id                  String                @id @default(cuid())
   userId              String                @unique
   user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  openingBalance      Float                 @default(0)     
   currentBalance      Float                 @default(0)
   totalSavings        Float                 @default(0)
   totalWithdrawals    Float                 @default(0)
   interestRateSavings Float                 @default(0)
   interestRateLoan    Float                 @default(0)
+  
+  // NEW: Track when interest was last credited (for idempotency)
+  lastInterestCreditedAt DateTime?
+  lastInterestMonth      String?              
+  
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
   transactions        PassbookTransaction[]
@@ -396,9 +469,13 @@ model PassbookTransaction {
   id            String      @id @default(cuid())
   passbookId    String
   passbook      Passbook    @relation(fields: [passbookId], references: [id], onDelete: Cascade)
-  type          String
+  type          PassbookTransactionType       
   amount        Float
   description   String?
-  balanceAfter  Float
+  balanceAfter  Float      
+  
+  loanApplicationId String?
+  loanApplication   LoanApplication? @relation(fields: [loanApplicationId], references: [id])
+  
   createdAt     DateTime    @default(now())
 }

@@ -12,7 +12,7 @@ export interface SidebarNavItem {
 }
 
 export interface IconSidebarProps {
-  navItems?: SidebarNavItem[]
+  navItems?: Array<SidebarNavItem>
   /** Avatar URL shown at the bottom */
   avatar?: string
   /** Footer label rendered vertically */
@@ -59,7 +59,7 @@ export function IconSidebar({
     <div
       className={cn(
         'w-16 bg-[#1a1a1a] flex flex-col items-center py-4 gap-2 flex-shrink-0',
-        className
+        className,
       )}
     >
       {/* Logo */}
@@ -73,8 +73,16 @@ export function IconSidebar({
           <Link
             key={i}
             to={item.to}
-            className={cn('relative p-2.5 rounded-xl transition-colors', inactiveClass)}
-            activeProps={{ className: cn('relative p-2.5 rounded-xl transition-colors', activeClass) }}
+            className={cn(
+              'relative p-2.5 rounded-xl transition-colors',
+              inactiveClass,
+            )}
+            activeProps={{
+              className: cn(
+                'relative p-2.5 rounded-xl transition-colors',
+                activeClass,
+              ),
+            }}
           >
             {item.icon}
             {item.badge != null && (
@@ -87,7 +95,10 @@ export function IconSidebar({
           <button
             key={i}
             onClick={item.onClick}
-            className={cn('relative p-2.5 rounded-xl transition-colors', inactiveClass)}
+            className={cn(
+              'relative p-2.5 rounded-xl transition-colors',
+              inactiveClass,
+            )}
           >
             {item.icon}
             {item.badge != null && (
@@ -96,12 +107,14 @@ export function IconSidebar({
               </span>
             )}
           </button>
-        )
+        ),
       )}
 
       {/* Bottom */}
       <div className="mt-auto flex flex-col items-center gap-4">
-        <button className={cn('p-2 rounded-lg transition-colors', inactiveClass)}>
+        <button
+          className={cn('p-2 rounded-lg transition-colors', inactiveClass)}
+        >
           <Settings size={16} />
         </button>
         {avatar && (

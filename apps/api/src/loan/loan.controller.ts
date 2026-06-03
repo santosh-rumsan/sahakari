@@ -5,11 +5,11 @@ import {
   Patch,
   Param,
   Body,
-  Query,
   UseGuards,
   Request,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import type { AuthRequest } from '../auth/types';
 import { LoanService } from './loan.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -21,21 +21,21 @@ export class LoanController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   @ApiBearerAuth()
-  listMine(@Request() req: any) {
+  listMine(@Request() req: AuthRequest) {
     return this.loan.listMine(req.user.sub);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(':id')
   @ApiBearerAuth()
-  getOne(@Param('id') id: string, @Request() req: any) {
+  @Get(':id')
+  getOne(@Param('id') id: string, @Request() req: AuthRequest) {
     return this.loan.getByIdForMember(req.user.sub, id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post()
   @ApiBearerAuth()
-  create(@Request() req: any) {
+  create(@Request() req: AuthRequest) {
     return this.loan.create(req.user.sub);
   }
 
@@ -44,8 +44,8 @@ export class LoanController {
   @ApiBearerAuth()
   updatePersonalInfo(
     @Param('id') id: string,
-    @Request() req: any,
-    @Body() body: any,
+    @Request() req: AuthRequest,
+    @Body() body: Record<string, unknown>,
   ) {
     return this.loan.updatePersonalInfo(req.user.sub, id, body);
   }
@@ -55,8 +55,8 @@ export class LoanController {
   @ApiBearerAuth()
   updateLoanDetails(
     @Param('id') id: string,
-    @Request() req: any,
-    @Body() body: any,
+    @Request() req: AuthRequest,
+    @Body() body: Record<string, unknown>,
   ) {
     return this.loan.updateLoanDetails(req.user.sub, id, body);
   }
@@ -66,8 +66,8 @@ export class LoanController {
   @ApiBearerAuth()
   updateAddress(
     @Param('id') id: string,
-    @Request() req: any,
-    @Body() body: any,
+    @Request() req: AuthRequest,
+    @Body() body: Record<string, unknown>,
   ) {
     return this.loan.updateAddress(req.user.sub, id, body);
   }
@@ -77,8 +77,8 @@ export class LoanController {
   @ApiBearerAuth()
   updateTermsGuarantor(
     @Param('id') id: string,
-    @Request() req: any,
-    @Body() body: any,
+    @Request() req: AuthRequest,
+    @Body() body: Record<string, unknown>,
   ) {
     return this.loan.updateTermsGuarantor(req.user.sub, id, body);
   }
@@ -88,8 +88,8 @@ export class LoanController {
   @ApiBearerAuth()
   updateDocuments(
     @Param('id') id: string,
-    @Request() req: any,
-    @Body() body: any,
+    @Request() req: AuthRequest,
+    @Body() body: Record<string, unknown>,
   ) {
     return this.loan.updateDocuments(req.user.sub, id, body);
   }
@@ -97,7 +97,7 @@ export class LoanController {
   @UseGuards(JwtAuthGuard)
   @Post(':id/submit')
   @ApiBearerAuth()
-  submit(@Param('id') id: string, @Request() req: any) {
+  submit(@Param('id') id: string, @Request() req: AuthRequest) {
     return this.loan.submit(req.user.sub, id);
   }
 }

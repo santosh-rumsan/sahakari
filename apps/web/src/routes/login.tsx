@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { ShieldCheck, Mail, Key, Handshake } from 'lucide-react'
+import { Handshake, Key, Mail, ShieldCheck } from 'lucide-react'
 
 export const Route = createFileRoute('/login')({
   component: AdminLoginPage,

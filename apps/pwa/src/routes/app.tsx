@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createFileRoute,
   Link,
@@ -35,6 +35,7 @@ export { getToken };
 
 function AppLayout() {
   const token = getToken();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const user = JSON.parse(getStorageItem("user") ?? "{}");
   const cooperativeName =
@@ -59,6 +60,7 @@ function AppLayout() {
   const handleLogout = () => {
     removeStorageItem("token");
     removeStorageItem("user");
+    queryClient.clear();
     navigate({ to: "/login" });
   };
 

@@ -17,12 +17,17 @@ export interface AppShellProps {
  * Structure:
  *   [sidebar] [panel?] [main content (children)]
  */
-export function AppShell({ sidebar, panel, children, className }: AppShellProps) {
+export function AppShell({
+  sidebar,
+  panel,
+  children,
+  className,
+}: AppShellProps) {
   return (
     <div
       className={cn(
         'flex h-screen bg-[#f0f0f0] font-[Inter,sans-serif] overflow-hidden',
-        className
+        className,
       )}
     >
       {sidebar}

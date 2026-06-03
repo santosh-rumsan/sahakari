@@ -77,7 +77,8 @@ export class AuthService {
     });
 
     const token = this.jwtService.sign({ sub: user.id, phone: user.phone });
-    const { password: _, ...userData } = user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userData } = user;
     return { accessToken: token, user: userData };
   }
 
@@ -99,7 +100,8 @@ export class AuthService {
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
     const token = this.jwtService.sign({ sub: user.id, phone: user.phone });
-    const { password: _, ...userData } = user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userData } = user;
     return { accessToken: token, user: userData };
   }
 
@@ -116,7 +118,8 @@ export class AuthService {
       },
     });
     if (!user) throw new UnauthorizedException();
-    const { password: _, ...userData } = user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userData } = user;
     return userData;
   }
 

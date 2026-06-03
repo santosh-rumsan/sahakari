@@ -8,7 +8,10 @@ import viteTsConfigPaths from "vite-tsconfig-paths";
 const config = defineConfig(() => {
   const plugins = [
     viteTsConfigPaths({ projects: ["./tsconfig.json"] }),
-    TanStackRouterVite({ routesDirectory: "./src/routes", generatedRouteTree: "./src/routeTree.gen.ts" }),
+    TanStackRouterVite({
+      routesDirectory: "./src/routes",
+      generatedRouteTree: "./src/routeTree.gen.ts",
+    }),
     tailwindcss(),
     viteReact(),
     VitePWA({
@@ -74,7 +77,10 @@ const config = defineConfig(() => {
 
   return {
     plugins,
-    server: { host: "0.0.0.0", allowedHosts: ["vibecoder", "sahakari.rumsan.xyz"] },
+    server: {
+      host: "0.0.0.0",
+      allowedHosts: ["vibecoder", "sahakari.rumsan.xyz"],
+    },
   };
 });
 

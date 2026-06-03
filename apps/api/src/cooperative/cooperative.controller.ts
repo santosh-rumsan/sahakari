@@ -5,9 +5,9 @@ import {
   Body,
   UseGuards,
   Request,
-  Patch,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import type { AuthRequest } from '../auth/types';
 import { CooperativeService } from './cooperative.service';
 import { CreateCooperativeDto } from './dto/cooperative.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -21,7 +21,10 @@ export class CooperativeController {
   @Post()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create or update cooperative' })
-  createOrUpdate(@Body() dto: CreateCooperativeDto, @Request() req: any) {
+  createOrUpdate(
+    @Body() dto: CreateCooperativeDto,
+    @Request() req: AuthRequest,
+  ) {
     return this.cooperativeService.createOrUpdate(dto, req.user.sub);
   }
 
@@ -29,7 +32,7 @@ export class CooperativeController {
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current admin cooperative' })
-  getMyCooperative(@Request() req: any) {
+  getMyCooperative(@Request() req: AuthRequest) {
     return this.cooperativeService.getMyCooperative(req.user.sub);
   }
 
@@ -37,7 +40,13 @@ export class CooperativeController {
   @Get('check')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Check if cooperative is set up' })
-  checkCooperative(@Request() req: any) {
+  checkCooperative(@Request() req: AuthRequest) {
     return this.cooperativeService.checkCooperativeSetup(req.user.sub);
+  }
+
+  @Get('list')
+  @ApiOperation({ summary: 'List active cooperatives' })
+  listActiveCooperatives() {
+    return this.cooperativeService.listActiveCooperatives();
   }
 }

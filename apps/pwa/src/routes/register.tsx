@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 
 import { createAuthApi } from "@rs/sdk";
@@ -12,10 +13,28 @@ export const Route = createFileRoute("/register")({
 
 const authApi = createAuthApi(import.meta.env["VITE_API_URL"] ?? "");
 
+type CooperativeOption = {
+  id: string;
+  name: string;
+  code?: string | null;
+};
+
 function RegisterPage() {
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
+
+  const { data: cooperatives, isLoading: cooperativesLoading } = useQuery({
+    queryKey: ["public-cooperatives"],
+    queryFn: async () => {
+      const res = await fetch(`${apiUrl}/v1/cooperative/list`);
+      if (!res.ok) {
+        throw new Error("Failed to load cooperatives");
+      }
+      return (await res.json()) as Array<CooperativeOption>;
+    },
+  });
 
   const form = useForm({
     defaultValues: {
@@ -165,14 +184,25 @@ function RegisterPage() {
                   <label className="text-on-surface-variant font-headline mb-1.5 block text-sm font-medium">
                     Cooperative Name
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Chandragiri Saving & Credit"
+                  <select
                     className={inputClass}
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
-                  />
+                    disabled={cooperativesLoading}
+                  >
+                    <option value="">
+                      {cooperativesLoading
+                        ? "Loading cooperatives..."
+                        : "Select cooperative"}
+                    </option>
+                    {cooperatives?.map((cooperative) => (
+                      <option key={cooperative.id} value={cooperative.name}>
+                        {cooperative.name}
+                        {cooperative.code ? ` (${cooperative.code})` : ""}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
             </form.Field>

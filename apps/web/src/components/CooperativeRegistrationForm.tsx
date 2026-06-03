@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Upload, Loader2 } from 'lucide-react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Loader2, Upload } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 
 const apiUrl = import.meta.env['VITE_API_URL'] ?? ''
@@ -30,12 +30,16 @@ interface Municipality {
 }
 
 const optionalText = z.preprocess(
-  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  (value) =>
+    typeof value === 'string' && value.trim() === '' ? undefined : value,
   z.string().trim().optional(),
 )
 
 const formSchema = z.object({
-  name: z.string().trim().min(3, 'Cooperative name must be at least 3 characters'),
+  name: z
+    .string()
+    .trim()
+    .min(3, 'Cooperative name must be at least 3 characters'),
   nameNp: optionalText,
   code: optionalText,
   provinceId: z.string().min(1, 'Province is required'),
@@ -49,17 +53,19 @@ const formSchema = z.object({
       message: 'Ward number must be a positive number',
     }),
   tole: z.string().trim().min(2, 'Tole/Street is required'),
-  establishedYear: z
-    .preprocess(
-      (value) =>
-        typeof value === 'string' && value.trim() === '' ? undefined : value,
-      z
-        .string()
-        .regex(/^\d{4}$/, 'Establishment year must be a 4 digit year')
-        .optional(),
-    ),
+  establishedYear: z.preprocess(
+    (value) =>
+      typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z
+      .string()
+      .regex(/^\d{4}$/, 'Establishment year must be a 4 digit year')
+      .optional(),
+  ),
   panNumber: optionalText,
-  registrationNumber: z.string().trim().min(3, 'Registration number is required'),
+  registrationNumber: z
+    .string()
+    .trim()
+    .min(3, 'Registration number is required'),
   logoUrl: optionalText,
   email: z.string().trim().email('Enter a valid email address'),
   contactNumber: z
@@ -115,7 +121,7 @@ export function CooperativeRegistrationForm() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
 
   // Fetch provinces
-  const { data: provinces = [] } = useQuery<Province[]>({
+  const { data: provinces = [] } = useQuery<Array<Province>>({
     queryKey: ['provinces'],
     queryFn: async () => {
       const res = await fetch(`${apiUrl}/v1/geo/provinces`)
@@ -124,7 +130,7 @@ export function CooperativeRegistrationForm() {
   })
 
   // Fetch districts based on province
-  const { data: districts = [] } = useQuery<District[]>({
+  const { data: districts = [] } = useQuery<Array<District>>({
     queryKey: ['districts', formData.provinceId],
     queryFn: async () => {
       if (!formData.provinceId) return []
@@ -137,7 +143,7 @@ export function CooperativeRegistrationForm() {
   })
 
   // Fetch municipalities based on district
-  const { data: municipalities = [] } = useQuery<Municipality[]>({
+  const { data: municipalities = [] } = useQuery<Array<Municipality>>({
     queryKey: ['municipalities', formData.districtId],
     queryFn: async () => {
       if (!formData.districtId) return []
@@ -152,14 +158,14 @@ export function CooperativeRegistrationForm() {
   // Upload logo mutation
   const uploadLogoMutation = useMutation({
     mutationFn: async (file: File) => {
-      const formData = new FormData()
-      formData.append('file', file)
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', file)
       const res = await fetch(`${apiUrl}/v1/upload`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        body: formData,
+        body: uploadFormData,
       })
       const data = await res.json()
       return data.url
@@ -211,7 +217,7 @@ export function CooperativeRegistrationForm() {
         const nextErrors: Partial<Record<FormField, string>> = {}
 
         for (const [field, messages] of Object.entries(fieldErrors)) {
-          if (!messages?.[0]) continue
+          if (!messages[0]) continue
           nextErrors[field as FormField] = messages[0]
         }
 
@@ -279,18 +285,20 @@ export function CooperativeRegistrationForm() {
 
     // Reset dependent fields when parent changes
     const fieldSchema = formSchema.shape[fieldName]
-    if (fieldSchema) {
-      const result = fieldSchema.safeParse(value)
-      setErrors((prev) => ({
-        ...prev,
-        [fieldName]: result.success
-          ? undefined
-          : result.error.issues[0]?.message || 'Invalid value',
-      }))
-    }
+    const result = fieldSchema.safeParse(value)
+    setErrors((prev) => ({
+      ...prev,
+      [fieldName]: result.success
+        ? undefined
+        : result.error.issues[0]?.message || 'Invalid value',
+    }))
 
     if (name === 'provinceId') {
-      setErrors((prev) => ({ ...prev, districtId: undefined, municipalityId: undefined }))
+      setErrors((prev) => ({
+        ...prev,
+        districtId: undefined,
+        municipalityId: undefined,
+      }))
     }
     if (name === 'districtId') {
       setErrors((prev) => ({ ...prev, municipalityId: undefined }))
@@ -365,7 +373,9 @@ export function CooperativeRegistrationForm() {
                   errors.name ? 'border-red-400' : 'border-gray-200'
                 }`}
               />
-              {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
+              {errors.name && (
+                <p className="mt-1 text-xs text-red-600">{errors.name}</p>
+              )}
             </div>
             {/* <div>
               <label className="block text-sm font-medium text-gray-900 mb-2">
@@ -406,7 +416,9 @@ export function CooperativeRegistrationForm() {
                   ))}
                 </select>
                 {errors.provinceId && (
-                  <p className="mt-1 text-xs text-red-600">{errors.provinceId}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.provinceId}
+                  </p>
                 )}
               </div>
 
@@ -431,7 +443,9 @@ export function CooperativeRegistrationForm() {
                   ))}
                 </select>
                 {errors.districtId && (
-                  <p className="mt-1 text-xs text-red-600">{errors.districtId}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.districtId}
+                  </p>
                 )}
               </div>
 
@@ -456,7 +470,9 @@ export function CooperativeRegistrationForm() {
                   ))}
                 </select>
                 {errors.municipalityId && (
-                  <p className="mt-1 text-xs text-red-600">{errors.municipalityId}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.municipalityId}
+                  </p>
                 )}
               </div>
 
@@ -476,7 +492,9 @@ export function CooperativeRegistrationForm() {
                   }`}
                 />
                 {errors.wardNumber && (
-                  <p className="mt-1 text-xs text-red-600">{errors.wardNumber}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.wardNumber}
+                  </p>
                 )}
               </div>
 
@@ -494,7 +512,9 @@ export function CooperativeRegistrationForm() {
                     errors.tole ? 'border-red-400' : 'border-gray-200'
                   }`}
                 />
-                {errors.tole && <p className="mt-1 text-xs text-red-600">{errors.tole}</p>}
+                {errors.tole && (
+                  <p className="mt-1 text-xs text-red-600">{errors.tole}</p>
+                )}
               </div>
             </div>
           </div>
@@ -516,7 +536,9 @@ export function CooperativeRegistrationForm() {
                 }`}
               />
               {errors.establishedYear && (
-                <p className="mt-1 text-xs text-red-600">{errors.establishedYear}</p>
+                <p className="mt-1 text-xs text-red-600">
+                  {errors.establishedYear}
+                </p>
               )}
             </div>
             <div>
@@ -549,26 +571,30 @@ export function CooperativeRegistrationForm() {
               }`}
             />
             {errors.registrationNumber && (
-              <p className="mt-1 text-xs text-red-600">{errors.registrationNumber}</p>
+              <p className="mt-1 text-xs text-red-600">
+                {errors.registrationNumber}
+              </p>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Cooperative Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="e.g., info@maile.uk"
-              className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.email ? 'border-red-400' : 'border-gray-200'
-              }`}
-            />
-              {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
+              <label className="block text-sm font-medium text-gray-900 mb-2">
+                Cooperative Email
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="e.g., info@maile.uk"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.email ? 'border-red-400' : 'border-gray-200'
+                }`}
+              />
+              {errors.email && (
+                <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+              )}
             </div>
 
             <div>
@@ -586,7 +612,9 @@ export function CooperativeRegistrationForm() {
                 }`}
               />
               {errors.contactNumber && (
-                <p className="mt-1 text-xs text-red-600">{errors.contactNumber}</p>
+                <p className="mt-1 text-xs text-red-600">
+                  {errors.contactNumber}
+                </p>
               )}
             </div>
           </div>

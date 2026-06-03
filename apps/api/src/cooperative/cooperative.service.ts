@@ -170,4 +170,16 @@ export class CooperativeService {
       cooperativeId: admin.cooperativeId,
     };
   }
+
+  async listActiveCooperatives() {
+    return this.prisma.cooperative.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
 }

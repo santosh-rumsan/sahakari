@@ -28,7 +28,7 @@ import {
 import { getToken } from "../../lib/storage";
 
 const apiUrl = import.meta.env["VITE_API_URL"] ?? "";
-type SubmitError = Error & { details?: KycSubmitFieldError[] };
+type SubmitError = Error & { details?: Array<KycSubmitFieldError> };
 
 export const Route = createFileRoute("/app/kyc")({
   component: KycRouteWrapper,
@@ -57,7 +57,9 @@ function KycPage() {
   const queryClient = useQueryClient();
   const kycApi = createKycApi(apiUrl);
   const loanApi = createLoanApi(apiUrl);
-  const [submitErrors, setSubmitErrors] = useState<KycSubmitFieldError[]>([]);
+  const [submitErrors, setSubmitErrors] = useState<Array<KycSubmitFieldError>>(
+    [],
+  );
 
   const { data: kyc, isLoading } = useQuery({
     queryKey: ["kyc"],

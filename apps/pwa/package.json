@@ -9,7 +9,7 @@
     "demo": "pnpm build && vite preview --port 4080",
     "deploy": "pnpm build && wrangler pages deploy dist",
     "lint": "eslint",
-    "format": "prettier"
+    "format": "prettier --check . --ignore-path ../../.gitignore"
   },
   "dependencies": {
     "@base-ui/react": "catalog:",

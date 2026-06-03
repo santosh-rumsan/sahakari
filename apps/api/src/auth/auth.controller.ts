@@ -6,7 +6,8 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import type { AuthRequest } from './types';
 import { AuthService } from './auth.service';
 import {
   RegisterDto,
@@ -34,7 +35,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   @ApiBearerAuth()
-  me(@Request() req: any) {
+  me(@Request() req: AuthRequest) {
     return this.auth.me(req.user.sub);
   }
 
@@ -51,7 +52,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('admin/me')
   @ApiBearerAuth()
-  adminMe(@Request() req: any) {
+  adminMe(@Request() req: AuthRequest) {
     return this.auth.adminMe(req.user.sub);
   }
 }

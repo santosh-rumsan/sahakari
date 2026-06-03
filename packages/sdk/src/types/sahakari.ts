@@ -67,6 +67,14 @@ export const LOAN_DURATION = [
 ] as const;
 export type LoanDuration = (typeof LOAN_DURATION)[number];
 
+export const PAYMENT_FREQUENCY = [
+  "DAILY",
+  "WEEKLY",
+  "MONTHLY",
+  "QUARTERLY",
+  "ANNUAL",
+] as const;
+
 export const COLLATERAL_TYPE = ["WITH", "WITHOUT"] as const;
 export type CollateralType = (typeof COLLATERAL_TYPE)[number];
 
