@@ -5,8 +5,9 @@ RUN apk add --no-cache git
 RUN corepack enable && corepack prepare pnpm@10.19.0 --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/web/package.json apps/web/
+COPY apps/*/package.json apps/*/
 COPY packages/*/package.json packages/*/
+COPY tooling/*/package.json tooling/*/
 
 RUN pnpm install --frozen-lockfile
 COPY . .

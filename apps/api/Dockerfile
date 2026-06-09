@@ -5,8 +5,9 @@ RUN apk add --no-cache git python3 make g++
 RUN corepack enable && corepack prepare pnpm@10.19.0 --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/api/package.json apps/api/
+COPY apps/*/package.json apps/*/
 COPY packages/*/package.json packages/*/
+COPY tooling/*/package.json tooling/*/
 
 RUN pnpm install --frozen-lockfile
 COPY . .
