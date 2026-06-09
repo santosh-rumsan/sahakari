@@ -12,7 +12,7 @@ COPY tooling tooling/
 RUN pnpm install
 
 COPY . .
-RUN pnpm --filter api build
+RUN pnpm --filter @rs/db build && pnpm --filter api build
 
 FROM node:24-alpine AS runner
 WORKDIR /app
