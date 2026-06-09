@@ -10,21 +10,26 @@ COPY packages packages/
 COPY tooling tooling/
 
 RUN pnpm install
-
-COPY . .
 RUN pnpm --filter @rs/db build && pnpm --filter api build
 
 FROM node:24-alpine AS runner
 WORKDIR /app
-ENV NODE_ENV=production PORT=3000
+ENV NODE_ENV=production PORT=4082
 
 RUN addgroup -S app && adduser -S app -G app
 
 COPY --from=builder /app/node_modules ./node_modules
+
+# API app
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
+COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 
+COPY --from=builder /app/packages ./packages
+
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 
 USER app
-EXPOSE 3000
+EXPOSE 4082
 CMD ["node", "apps/api/dist/main"]
