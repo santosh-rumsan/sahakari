@@ -11,7 +11,7 @@ COPY apps/api/package.json apps/api/
 COPY packages/*/package.json packages/*/
 COPY tooling/*/package.json tooling/*/
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 COPY . .
 RUN pnpm --filter web build
