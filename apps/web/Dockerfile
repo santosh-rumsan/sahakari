@@ -6,10 +6,9 @@ RUN corepack enable && corepack prepare pnpm@10.19.0 --activate
 
 # Copy manifests for layer caching
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/web/package.json apps/web/
-COPY apps/api/package.json apps/api/
-COPY packages/*/package.json packages/*/
-COPY tooling/ tooling/  
+COPY apps apps/
+COPY packages packages/
+COPY tooling tooling/
 
 RUN pnpm install
 
