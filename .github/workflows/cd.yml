@@ -58,6 +58,8 @@ jobs:
           context: .
           file: apps/web/Dockerfile
           push: true
+          build-args: |
+            VITE_API_URL=${{ vars.VITE_API_URL }}
           tags: |
             ${{ env.DOCKERHUB_USERNAME }}/sahakari-web:dev
             ${{ env.DOCKERHUB_USERNAME }}/sahakari-web:${{ env.SHA_TAG }}
@@ -70,6 +72,8 @@ jobs:
           context: .
           file: apps/pwa/Dockerfile
           push: true
+          build-args: |
+            VITE_API_URL=${{ vars.VITE_API_URL }}
           tags: |
             ${{ env.DOCKERHUB_USERNAME }}/sahakari-pwa:dev
             ${{ env.DOCKERHUB_USERNAME }}/sahakari-pwa:${{ env.SHA_TAG }}
