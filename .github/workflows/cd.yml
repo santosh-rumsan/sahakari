@@ -46,7 +46,9 @@ jobs:
           context: .
           file: apps/api/Dockerfile
           push: true
-          tags: ${{ env.DOCKERHUB_USERNAME }}/sahakari-api:${{ env.SHA_TAG }}
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/sahakari-api:dev
+            ${{ env.DOCKERHUB_USERNAME }}/sahakari-api:${{ env.SHA_TAG }}
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
@@ -56,6 +58,20 @@ jobs:
           context: .
           file: apps/web/Dockerfile
           push: true
-          tags: ${{ env.DOCKERHUB_USERNAME }}/sahakari-web:${{ env.SHA_TAG }}
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/sahakari-web:dev
+            ${{ env.DOCKERHUB_USERNAME }}/sahakari-web:${{ env.SHA_TAG }}
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
+
+      - name: Build and push PWA image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/pwa/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/sahakari-pwa:dev
+            ${{ env.DOCKERHUB_USERNAME }}/sahakari-pwa:${{ env.SHA_TAG }}
+          cache-from: type=gha,scope=pwa
+          cache-to: type=gha,mode=max,scope=pwa
