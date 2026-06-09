@@ -46,7 +46,9 @@ jobs:
           context: .
           file: apps/api/Dockerfile
           push: true
-          tags: ${{ env.DOCKERHUB_USERNAME }}/sahakari-api:${{ github.sha }}
+          tags: ${{ env.DOCKERHUB_USERNAME }}/sahakari-api:${{ env.SHA_TAG }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
 
       - name: Build and push web image
         uses: docker/build-push-action@v5
@@ -54,4 +56,6 @@ jobs:
           context: .
           file: apps/web/Dockerfile
           push: true
-          tags: ${{ env.DOCKERHUB_USERNAME }}/sahakari-web:${{ github.sha }}
+          tags: ${{ env.DOCKERHUB_USERNAME }}/sahakari-web:${{ env.SHA_TAG }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web

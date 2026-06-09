@@ -1,17 +1,19 @@
 FROM node:24-alpine AS builder
-
 WORKDIR /app
+
 RUN apk add --no-cache git
 RUN corepack enable && corepack prepare pnpm@10.19.0 --activate
 
+# Copy manifests for layer caching
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/*/package.json apps/*/
+COPY apps/web/package.json apps/web/
+COPY apps/api/package.json apps/api/
 COPY packages/*/package.json packages/*/
 COPY tooling/*/package.json tooling/*/
 
 RUN pnpm install --frozen-lockfile
-COPY . .
 
+COPY . .
 RUN pnpm --filter web build
 
 FROM nginx:1.25-alpine AS runner
