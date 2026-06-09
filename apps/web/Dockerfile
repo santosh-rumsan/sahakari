@@ -4,13 +4,15 @@ WORKDIR /app
 RUN apk add --no-cache git
 RUN corepack enable && corepack prepare pnpm@10.19.0 --activate
 
-# Copy manifests for layer caching
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps apps/
 COPY packages packages/
 COPY tooling tooling/
 
 RUN pnpm install
+
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 
 COPY . .
 RUN pnpm --filter web build
