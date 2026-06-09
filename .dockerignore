@@ -1,0 +1,30 @@
+# Ignore dependencies and build output
+node_modules
+**/node_modules
+dist
+**/dist
+build
+**/build
+coverage
+**/coverage
+.turbo
+**/.turbo
+.cache
+**/.cache
+pnpm-store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore git and editor files
+.git
+.gitignore
+.vscode
+.idea
+
+# Ignore environment files
+.env
+.env.*
+
+# Ignore Dockerfiles from alternate configs
+Dockerfile*
