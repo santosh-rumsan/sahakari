@@ -8,7 +8,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/
 COPY apps/api/package.json apps/api/
 COPY packages/*/package.json packages/*/
-COPY tooling/*/package.json tooling/*/
+COPY tooling/ tooling/  
 
 RUN pnpm install
 
