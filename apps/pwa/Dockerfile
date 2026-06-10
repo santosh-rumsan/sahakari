@@ -19,5 +19,6 @@ RUN pnpm --filter pwa build
 
 FROM nginx:1.25-alpine AS runner
 COPY --from=builder /app/apps/pwa/dist /usr/share/nginx/html
+COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
